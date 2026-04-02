@@ -1,7 +1,7 @@
 # Cloudflare Pages _redirects
 # rvspot.net routing configuration
 
-# Trailing slash redirects
+# Clean URL redirects
 /search              /search.html    301
 /park                /park.html      301
 /routes              /routes.html    301
@@ -13,6 +13,3 @@
 /tos                 /pages/tos.html 301
 /privacy             /pages/privacy.html 301
 /about               /pages/about.html 301
-
-# www redirect (handled by Cloudflare, but just in case)
-https://www.rvspot.net/* https://rvspot.net/:splat 301
