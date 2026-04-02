@@ -212,3 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initSmoothScroll();
   initLazyImages();
 });
+/* Supabase Auth */
+const SUPABASE_URL='https://uydiifdgjzylfxxaoznv.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGlpZmRnanp5bGZ4eGFvem52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTMxNDMsImV4cCI6MjA5MDY2OTE0M30.McVsij-Z3m-rh9wjedwl5hM5fAaB5YDGYfHjsgxDfdE';
+function getSupabase(){if(window.supabase&&window.supabase.createClient)return window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);return null;}
+async function signInWithGoogle(){const sb=getSupabase();if(!sb){showToast('Loading...','warning');return;}const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});if(error)showToast(error.message,'error');}
+async function signUpWithEmail(email,password,firstName,lastName,role){const sb=getSupabase();if(!sb)return;const{error}=await sb.auth.signUp({email,password,options:{data:{first_name:firstName,last_name:lastName,role:role||'traveler'}}});if(error){showToast(error.message,'error');return;}showToast('Check your email to confirm! 🏕','success');closeModal('signupModal');}
+async function signInWithEmail(email,password){const sb=getSupabase();if(!sb)return;const{data,error}=await sb.auth.signInWithPassword({email,password});if(error){showToast(error.message,'error');return;}showToast('Welcome back! 🏕','success');closeModal('loginModal');}
