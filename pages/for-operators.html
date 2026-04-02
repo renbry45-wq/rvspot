@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For RV Park Operators — RVSpot Pro</title>
+  <meta name="description" content="List your RV park on RVSpot and reach 823K+ monthly searches. Pro Park subscription gives you full analytics, direct booking, and zero commissions.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .op-hero { background:var(--slate-900); padding:80px 0; text-align:center; position:relative; overflow:hidden; }
+    .op-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 60%, rgba(42,143,94,0.2) 0%, transparent 70%); pointer-events:none; }
+    .op-hero h1 { color:var(--white); margin-bottom:16px; }
+    .op-hero p { color:rgba(255,255,255,0.65); font-size:18px; max-width:620px; margin:0 auto 36px; }
+    .op-hero-stats { display:flex; justify-content:center; gap:48px; flex-wrap:wrap; padding:32px 0 0; border-top:1px solid rgba(255,255,255,0.1); margin-top:20px; }
+    .op-stat-num { font-family:var(--font-display); font-size:2rem; font-weight:700; color:var(--white); display:block; }
+    .op-stat-label { font-size:12px; color:rgba(255,255,255,0.4); }
+    .compare-table { width:100%; border-collapse:collapse; }
+    .compare-table th { padding:14px 20px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .compare-table th:first-child { text-align:left; color:var(--slate-500); }
+    .compare-table th:not(:first-child) { text-align:center; }
+    .compare-table td { padding:14px 20px; border-top:1px solid var(--cream-300); font-size:14px; }
+    .compare-table td:first-child { color:var(--slate-600); }
+    .compare-table td:not(:first-child) { text-align:center; }
+    .compare-table tr.highlight td { background:var(--green-50); }
+    .check-big { color:var(--green-600); font-size:18px; font-weight:700; }
+    .x-big { color:var(--slate-300); font-size:18px; }
+    .process-step { display:flex; gap:20px; align-items:flex-start; padding:24px 0; border-bottom:1px solid var(--cream-300); }
+    .process-step:last-child { border-bottom:none; }
+    .step-num { width:48px; height:48px; border-radius:50%; background:var(--green-800); color:var(--white); font-family:var(--font-display); font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .step-time { font-size:11px; font-weight:600; color:var(--amber-700); background:var(--amber-100); padding:2px 8px; border-radius:20px; display:inline-block; margin-bottom:6px; }
+    .step-title { font-size:16px; font-weight:700; color:var(--slate-900); margin-bottom:4px; }
+    .step-desc { font-size:14px; color:var(--slate-500); line-height:1.7; }
+    .faq-item { border-bottom:1px solid var(--cream-300); }
+    .faq-q { padding:18px 0; font-size:15px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; color:var(--slate-900); }
+    .faq-a { font-size:14px; color:var(--slate-500); line-height:1.75; padding-bottom:18px; display:none; }
+    .faq-a.open { display:block; }
+    .faq-icon { font-size:20px; color:var(--green-700); transition:transform .2s; }
+    .faq-icon.open { transform:rotate(45deg); }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="../search.html">Find Parks</a></li>
+      <li><a href="for-operators.html" class="active">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('claimModal')">Claim your park</button>
+    </div>
+  </div>
+</nav>
+
+<section class="op-hero">
+  <div class="container" style="position:relative;z-index:1">
+    <span class="section-eyebrow" style="color:var(--green-400)">For RV Park Operators</span>
+    <h1>More bookings.<br>Better guests. Less work.</h1>
+    <p>Reach 823,000+ monthly RV searches. Get a Pro dashboard, direct booking, real analytics, and zero commissions — all for $79/month.</p>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-amber btn-lg" onclick="openModal('claimModal')">Claim your free listing</button>
+      <a href="operator-dashboard.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)">See the dashboard →</a>
+    </div>
+    <div class="op-hero-stats">
+      <div><span class="op-stat-num">823K</span><span class="op-stat-label">Monthly searches on RVSpot</span></div>
+      <div><span class="op-stat-num">88%</span><span class="op-stat-label">Of parks are independent operators</span></div>
+      <div><span class="op-stat-num">$0</span><span class="op-stat-label">Commission on Pro Park plans</span></div>
+      <div><span class="op-stat-num">40%</span><span class="op-stat-label">Avg increase in long-stay bookings</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Listings that work</span>
+      <h2>What makes RVSpot different for operators</h2>
+    </div>
+    <div class="grid-3">
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">📊</div>
+        <h3>Real analytics dashboard</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">See which amenities drive bookings, where guests abandon the booking flow, occupancy by site type, and revenue trends — all in one clean dashboard.</p>
+      </div>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">💬</div>
+        <h3>Direct guest messaging</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">Respond to inquiries, send check-in instructions, and build relationships with guests — all through the RVSpot operator inbox. No third-party phone systems needed.</p>
+      </div>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">💰</div>
+        <h3>Dynamic pricing tools</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">Set seasonal rates, weekend premiums, long-stay discounts, and last-minute deals. Our pricing intelligence shows you how your rates compare to nearby parks.</p>
+      </div>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">🔍</div>
+        <h3>Priority search placement</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">Pro Parks appear first in search results for their area and are featured in category searches (Wi-Fi parks, long-stay parks, pet-friendly parks, etc.).</p>
+      </div>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">⭐</div>
+        <h3>Verified review management</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">Respond publicly to reviews, flag policy violations, and request Wi-Fi audits. Pro Parks display a "Verified Pro" badge that increases booking conversion by 28%.</p>
+      </div>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:28px">
+        <div style="font-size:36px;margin-bottom:16px">📋</div>
+        <h3>Job board posting</h3>
+        <p style="font-size:14px;color:var(--slate-500);line-height:1.7">Post maintenance, front desk, and seasonal positions to the RVSpot job board. Reach full-time RVers who are actively looking for work-trade opportunities at parks.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--cream-200)">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">Pricing comparison</span><h2>Free listing vs. Pro Park</h2><p>Start free. Upgrade when you're ready to grow.</p></div>
+    <div style="background:var(--white);border-radius:var(--radius-xl);border:1px solid var(--cream-300);overflow:hidden;max-width:800px;margin:0 auto">
+      <table class="compare-table">
+        <thead>
+          <tr style="background:var(--cream-100)">
+            <th>Feature</th>
+            <th style="background:var(--white)">Free listing</th>
+            <th style="background:var(--green-800);color:var(--white);border-radius:var(--radius-md)">Pro Park · $79/mo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Park listed on RVSpot</td><td><span class="check-big">✓</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr><td>Photos & amenity listing</td><td><span class="check-big">✓</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr><td>Guest reviews & ratings</td><td><span class="check-big">✓</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr><td>Booking commission</td><td><b>10% per booking</b></td><td><b style="color:var(--green-700)">$0 (zero commissions)</b></td></tr>
+          <tr class="highlight"><td>Priority search placement</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Analytics dashboard</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Dynamic pricing tools</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Direct guest messaging</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Review response tools</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Verified Pro badge</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Job board posting</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+          <tr class="highlight"><td>Nomad Pro member discounts</td><td><span class="x-big">✗</span></td><td><span class="check-big">✓</span></td></tr>
+        </tbody>
+      </table>
+      <div style="padding:24px;text-align:center;background:var(--green-50);border-top:1px solid var(--green-100)">
+        <p style="font-size:14px;color:var(--green-800);margin-bottom:16px">Pro Parks that fill just 2 extra bookings per month recover their subscription cost.</p>
+        <button class="btn btn-primary btn-lg" onclick="openModal('claimModal')">Start 30-day free trial</button>
+        <p class="text-sm text-muted mt-8">No credit card required · Cancel anytime</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">Getting started</span><h2>List your park in 30 minutes</h2></div>
+    <div style="max-width:680px;margin:0 auto">
+      <div class="process-step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-time">5 min</div>
+          <div class="step-title">Claim your listing</div>
+          <div class="step-desc">Search for your park on RVSpot. If it exists, claim it with a verification email to your park's domain. If it's new, create it. No phone verification needed.</div>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-time">15 min</div>
+          <div class="step-title">Complete your profile</div>
+          <div class="step-desc">Add photos, complete your amenity checklist (50+ data points), set your rates (nightly, weekly, monthly), and write your park description. Our park profile score tells you what to add next.</div>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-time">5 min</div>
+          <div class="step-title">Connect your booking calendar</div>
+          <div class="step-desc">Set your availability, block unavailable dates, and connect your existing booking calendar via iCal sync. Direct bookings start immediately.</div>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-time">Optional</div>
+          <div class="step-title">Upgrade to Pro Park</div>
+          <div class="step-desc">Start your 30-day free trial of Pro Park. Unlock zero commissions, analytics, priority placement, and messaging. No credit card needed until trial ends.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--cream-100)">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">FAQs for operators</span><h2>Common questions</h2></div>
+    <div style="max-width:720px;margin:0 auto" id="faqContainer">
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Do I need to use RVSpot's booking system, or can I keep my current system?<span class="faq-icon">+</span></div><div class="faq-a">You can use both. Free listings can direct inquiries to your existing website or phone. Pro Parks get RVSpot's native booking system with real-time availability, but it's not mandatory — you can sync via iCal and keep your existing system as the source of truth.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">How does the 10% commission work for free listings?<span class="faq-icon">+</span></div><div class="faq-a">For free-tier parks, RVSpot processes bookings on your behalf and remits 90% of the nightly rate to your bank account within 5–7 business days after each stay. Pro Parks pay $0 in commissions — guests pay you directly through the booking system.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Can I control which dates are available and block off time?<span class="faq-icon">+</span></div><div class="faq-a">Yes. You have full control over availability. You can block individual dates, set seasonal closures, limit the booking window, and define minimum stay requirements per site. Pro Parks also get site-level availability management for granular control.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What happens to reviews I don't agree with?<span class="faq-icon">+</span></div><div class="faq-a">Pro Parks can publicly respond to any review, which is visible to all future visitors. Reviews can be flagged for policy violations (hate speech, fake reviews, etc.) and our team reviews within 48 hours. Reviews from verified stays (guests who booked through RVSpot) are labeled separately from unverified reviews.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Is there a contract or minimum commitment?<span class="faq-icon">+</span></div><div class="faq-a">No contracts. Pro Park is month-to-month. Cancel anytime before your next billing date. Annual plans are available at a 15% discount ($799/year vs $948/year billed monthly).</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Can I list multiple parks under one account?<span class="faq-icon">+</span></div><div class="faq-a">Yes. One operator account can manage unlimited park listings. Each park is billed separately at $79/month if upgrading to Pro. Multi-park operators with 5+ parks should contact us for enterprise pricing.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band" style="background:var(--green-800);padding:80px 0;text-align:center">
+  <div class="container">
+    <h2 style="color:var(--white);margin-bottom:12px">Ready to grow your park's bookings?</h2>
+    <p style="color:rgba(255,255,255,0.7);font-size:17px;margin-bottom:32px;max-width:520px;margin-left:auto;margin-right:auto">Join hundreds of park operators reaching 823K+ monthly RV searches. Start free, upgrade when ready.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-amber btn-lg" onclick="openModal('claimModal')">Claim your free listing</button>
+      <a href="operator-dashboard.html" class="btn btn-lg" style="background:rgba(255,255,255,0.12);color:var(--white);border:1px solid rgba(255,255,255,0.25)">Preview the dashboard</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container"><div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div><a href="../index.html" style="color:rgba(255,255,255,0.4);font-size:13px">← Back to home</a></div></div>
+</footer>
+
+<!-- Claim Modal -->
+<div class="modal-overlay" id="claimModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Claim or create your park listing</div><button class="modal-close" data-modal-close="claimModal">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Park name</label><input type="text" placeholder="e.g. Pineview Lake RV Resort"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">City</label><input type="text" placeholder="Austin"></div>
+        <div class="form-group"><label class="form-label">State</label><input type="text" placeholder="Texas"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Your name</label><input type="text" placeholder="Jane Smith"></div>
+      <div class="form-group"><label class="form-label">Park email address</label><input type="email" placeholder="manager@yourpark.com"><div class="form-hint">We'll send a verification link to this address to confirm ownership.</div></div>
+      <div class="form-group"><label class="form-label">Phone (optional)</label><input type="tel" placeholder="(555) 000-0000"></div>
+      <button class="btn btn-primary w-full" onclick="showToast('Verification email sent! Check your inbox to complete listing setup.','success');closeModal('claimModal')">Send verification email</button>
+      <p class="text-center mt-8 text-sm text-muted">Free to list. No credit card required.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+
+<script src="../js/app.js"></script>
+<script>
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  const icon = el.querySelector('.faq-icon');
+  answer.classList.toggle('open');
+  icon.classList.toggle('open');
+}
+</script>
+</body>
+</html>

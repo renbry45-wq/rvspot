@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RV Reviews — Find the Right Rig — RVSpot</title>
+  <meta name="description" content="Real owner reviews of RV makes and models. Compare Class A, B, C motorhomes, 5th wheels, and travel trailers. See which rigs fit which parks.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .rv-hero { background:var(--slate-900); padding:56px 0; text-align:center; }
+    .rv-hero h1 { color:var(--white); margin-bottom:12px; }
+    .rv-hero p { color:rgba(255,255,255,0.6); font-size:17px; max-width:580px; margin:0 auto 28px; }
+    .category-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+    .category-card { background:var(--white); border-radius:var(--radius-lg); border:1.5px solid var(--cream-300); padding:24px 20px; text-align:center; cursor:pointer; transition:all .2s; text-decoration:none; color:inherit; }
+    .category-card:hover { border-color:var(--green-600); transform:translateY(-3px); box-shadow:var(--shadow-md); }
+    .category-card.active { border-color:var(--green-800); background:var(--green-50); }
+    .cat-icon { font-size:36px; margin-bottom:12px; display:block; }
+    .cat-name { font-weight:700; font-size:15px; color:var(--slate-900); margin-bottom:4px; }
+    .cat-count { font-size:12px; color:var(--slate-400); }
+    .rv-card { background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--cream-300); padding:20px; transition:all .2s; cursor:pointer; }
+    .rv-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .rv-name { font-family:var(--font-display); font-size:18px; font-weight:700; margin-bottom:4px; }
+    .rv-sub { font-size:13px; color:var(--slate-400); margin-bottom:10px; }
+    .rv-specs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .spec-chip { font-size:11px; background:var(--cream-100); color:var(--slate-600); padding:3px 9px; border-radius:20px; font-weight:500; }
+    .rv-price-range { font-size:16px; font-weight:700; color:var(--green-800); }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html" class="active">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<div class="rv-hero">
+  <div class="container">
+    <h1>Find the right rig for your lifestyle</h1>
+    <p>Real owner reviews of every major RV make and model — plus which parks fit your rig size.</p>
+    <form style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <input type="text" placeholder="Search makes, models, or features…" style="width:320px;background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.2);color:var(--white)">
+      <button class="btn btn-primary">Search RVs</button>
+    </form>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">Browse by type</span><h2>Find your category</h2></div>
+    <div class="category-grid" id="catGrid">
+      <a href="#rvList" class="category-card" onclick="filterCat('class_a')"><span class="cat-icon">🚌</span><div class="cat-name">Class A Motorhome</div><div class="cat-count">248 reviews · 42 models</div></a>
+      <a href="#rvList" class="category-card" onclick="filterCat('class_b')"><span class="cat-icon">🚐</span><div class="cat-name">Class B Van / Campervan</div><div class="cat-count">312 reviews · 28 models</div></a>
+      <a href="#rvList" class="category-card" onclick="filterCat('class_c')"><span class="cat-icon">🚚</span><div class="cat-name">Class C Motorhome</div><div class="cat-count">194 reviews · 35 models</div></a>
+      <a href="#rvList" class="category-card" onclick="filterCat('5th_wheel')"><span class="cat-icon">🔗</span><div class="cat-name">5th Wheel</div><div class="cat-count">287 reviews · 56 models</div></a>
+      <a href="#rvList" class="category-card" onclick="filterCat('travel_trailer')"><span class="cat-icon">🏕</span><div class="cat-name">Travel Trailer</div><div class="cat-count">521 reviews · 84 models</div></a>
+      <a href="#rvList" class="category-card" onclick="filterCat('toy_hauler')"><span class="cat-icon">🏍</span><div class="cat-name">Toy Hauler</div><div class="cat-count">143 reviews · 31 models</div></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--cream-200)" id="rvList">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="margin-bottom:4px">Top-rated RVs</h2>
+        <p class="text-sm text-muted" id="rvListLabel">Showing all categories · 1,705 owner reviews</p>
+      </div>
+      <select class="sort-select" style="width:auto">
+        <option>Sort: Highest rated</option>
+        <option>Sort: Most reviewed</option>
+        <option>Sort: Price (low–high)</option>
+        <option>Sort: Newest models</option>
+      </select>
+    </div>
+    <div class="grid-3" id="rvGrid">
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🚐</div><div class="rv-name">Airstream Bambi 16RB</div><div class="rv-sub">2024 · Travel Trailer · 16 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★★</span><span class="rating-count">4.8 (124 owner reviews)</span></div><div class="rv-specs"><span class="spec-chip">16 ft</span><span class="spec-chip">2,800 lbs</span><span class="spec-chip">Sleeps 2</span><span class="spec-chip">Solar-ready</span></div><div class="rv-price-range">$48,000 – $56,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 98% of RVSpot parks · including tight loops</div></div>
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🚐</div><div class="rv-name">Winnebago Travato 59GL</div><div class="rv-sub">2024 · Class B Campervan · 21 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★★</span><span class="rating-count">4.7 (87 reviews)</span></div><div class="rv-specs"><span class="spec-chip">21 ft</span><span class="spec-chip">11,500 GVWR</span><span class="spec-chip">Sleeps 2</span><span class="spec-chip">EV-capable</span></div><div class="rv-price-range">$72,000 – $88,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 100% of RVSpot parks · most versatile</div></div>
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🚌</div><div class="rv-name">Thor Motor Coach Palazzo 37.4</div><div class="rv-sub">2024 · Class A Diesel · 40 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★☆</span><span class="rating-count">4.4 (56 reviews)</span></div><div class="rv-specs"><span class="spec-chip">40 ft</span><span class="spec-chip">Diesel pusher</span><span class="spec-chip">Sleeps 6</span><span class="spec-chip">Full slides</span></div><div class="rv-price-range">$162,000 – $195,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 74% of RVSpot parks · needs pull-through sites</div></div>
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🔗</div><div class="rv-name">Grand Design Reflection 337RLS</div><div class="rv-sub">2024 · 5th Wheel · 39 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★★</span><span class="rating-count">4.9 (203 reviews)</span></div><div class="rv-specs"><span class="spec-chip">39 ft</span><span class="spec-chip">16,000 GVWR</span><span class="spec-chip">Sleeps 4</span><span class="spec-chip">3 slides</span></div><div class="rv-price-range">$68,000 – $82,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 81% of RVSpot parks · excellent full-time rating</div></div>
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🚚</div><div class="rv-name">Lance 2465</div><div class="rv-sub">2024 · Travel Trailer · 29 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★★</span><span class="rating-count">4.7 (312 reviews)</span></div><div class="rv-specs"><span class="spec-chip">29 ft</span><span class="spec-chip">7,995 GVWR</span><span class="spec-chip">Sleeps 4</span><span class="spec-chip">350w Solar</span></div><div class="rv-price-range">$42,000 – $51,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 94% of RVSpot parks · top pick for full-timers</div></div>
+      <div class="rv-card"><div style="font-size:32px;margin-bottom:12px">🚌</div><div class="rv-name">Tiffin Allegro Bus 45OPP</div><div class="rv-sub">2024 · Class A Diesel · 45 ft</div><div class="park-card-rating mb-8"><span class="stars">★★★★☆</span><span class="rating-count">4.5 (44 reviews)</span></div><div class="rv-specs"><span class="spec-chip">45 ft</span><span class="spec-chip">Diesel</span><span class="spec-chip">Sleeps 6</span><span class="spec-chip">4 slides</span></div><div class="rv-price-range">$385,000 – $450,000</div><div style="margin-top:10px;font-size:13px;color:var(--slate-500)">Fits: 58% of RVSpot parks · requires large pull-through</div></div>
+    </div>
+    <div class="text-center mt-24">
+      <button class="btn btn-primary btn-lg" onclick="showToast('Loading more RV reviews…','success')">Load more RV reviews →</button>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--green-800);padding:56px 0;text-align:center">
+  <div class="container">
+    <h2 style="color:var(--white);margin-bottom:10px">Own an RV? Write a review.</h2>
+    <p style="color:rgba(255,255,255,0.7);margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto">Help other RVers make the right choice. Share your real-world experience with your rig.</p>
+    <button class="btn btn-amber btn-lg" onclick="openModal('signupModal')">Write a review — it's free</button>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container"><div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot</div><a href="index.html" style="color:rgba(255,255,255,0.4);font-size:13px">← Home</a></div></div>
+</footer>
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" onclick="showToast('Welcome! 🏕','success');closeModal('signupModal')">Create account</button></div></div></div>
+<script src="js/app.js"></script>
+<script>
+function filterCat(cat) {
+  document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

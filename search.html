@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find RV Parks — RVSpot</title>
+  <meta name="description" content="Search 16,400+ RV parks and campgrounds. Filter by Wi-Fi, long-stay rates, pets, EV charging, hookups, price, and more.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .search-header { background:var(--green-900); padding:32px 0; }
+    .search-header h1 { color:var(--white); font-size:1.8rem; margin-bottom:16px; }
+    .results-layout { display:grid; grid-template-columns:280px 1fr; gap:24px; padding:32px 0; }
+    .results-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .results-count { font-size:15px; color:var(--slate-500); }
+    .results-count strong { color:var(--slate-900); }
+    .sort-select { padding:8px 14px; border:1.5px solid var(--cream-300); border-radius:var(--radius-md); font-size:13px; background:var(--white); color:var(--slate-700); cursor:pointer; width:auto; }
+    .active-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+    .filter-tag { display:inline-flex; align-items:center; gap:6px; background:var(--green-100); color:var(--green-800); padding:4px 12px; border-radius:20px; font-size:13px; font-weight:500; }
+    .filter-tag button { background:none; border:none; cursor:pointer; color:var(--green-600); font-size:16px; line-height:1; padding:0; margin-left:2px; }
+    .park-list { display:flex; flex-direction:column; gap:16px; }
+    .park-list-card { background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--cream-300); display:grid; grid-template-columns:220px 1fr auto; overflow:hidden; transition:all var(--transition); cursor:pointer; text-decoration:none; color:inherit; }
+    .park-list-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .park-list-img { height:100%; min-height:160px; display:flex; align-items:center; justify-content:center; font-size:48px; }
+    .park-list-body { padding:16px 20px; }
+    .park-list-state { font-size:11px; font-weight:700; color:var(--green-600); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+    .park-list-name { font-family:var(--font-display); font-size:18px; font-weight:700; color:var(--slate-900); margin-bottom:6px; }
+    .park-list-desc { font-size:13px; color:var(--slate-500); margin-bottom:10px; line-height:1.6; }
+    .park-list-tags { display:flex; flex-wrap:wrap; gap:6px; }
+    .park-list-right { padding:16px 20px; display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; min-width:160px; border-left:1px solid var(--cream-200); }
+    .park-list-price { text-align:right; }
+    .park-list-price .price-amount { font-size:22px; font-weight:800; color:var(--slate-900); }
+    .park-list-price .price-label { font-size:12px; color:var(--slate-400); display:block; }
+    .park-list-price .monthly { font-size:14px; color:var(--green-700); font-weight:600; margin-top:4px; }
+    .wifi-bar { display:flex; align-items:center; gap:6px; margin-top:8px; }
+    .wifi-bar-bg { height:4px; width:80px; background:var(--cream-300); border-radius:2px; }
+    .wifi-bar-fill { height:4px; border-radius:2px; background:var(--green-600); }
+    .wifi-speed { font-size:12px; color:var(--slate-500); }
+    .map-toggle { display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--white); border:1.5px solid var(--cream-300); border-radius:var(--radius-md); font-size:13px; font-weight:500; color:var(--slate-600); cursor:pointer; transition:all var(--transition); }
+    .map-toggle:hover { border-color:var(--green-600); color:var(--green-800); }
+    .map-view { display:none; }
+    .map-view.active { display:block; }
+    @media(max-width:900px){ .results-layout{grid-template-columns:1fr;} .filter-sidebar{display:none;} .park-list-card{grid-template-columns:1fr;} .park-list-img{height:180px;} .park-list-right{border-left:none;border-top:1px solid var(--cream-200);flex-direction:row;align-items:center;} }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html" class="active">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<div class="search-header">
+  <div class="container">
+    <h1>Find your perfect RV park</h1>
+    <form class="search-box" action="search.html" method="get" style="max-width:800px">
+      <svg style="margin-left:12px;color:var(--slate-400);flex-shrink:0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="search-field" id="searchQ" type="text" name="q" placeholder="City, state, zip code, or park name…" style="border:none;background:transparent;outline:none;">
+      <div class="search-divider"></div>
+      <select name="type" style="border:none;background:transparent;outline:none;font-size:13px;color:var(--slate-600);padding:8px 12px;cursor:pointer;width:auto">
+        <option value="">All types</option>
+        <option>RV Resort</option>
+        <option>Campground</option>
+        <option>RV Community</option>
+        <option>State Park</option>
+      </select>
+      <button type="submit" class="search-submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<div class="container">
+  <div class="results-layout">
+
+    <!-- Sidebar Filters -->
+    <aside class="filter-sidebar">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px">Filters</h3>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear all</button>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Amenities</div>
+        <div class="filter-option"><input type="checkbox" id="f-wifi" onchange="applyFilters()"><label for="f-wifi">Wi-Fi available</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-wifi50" onchange="applyFilters()"><label for="f-wifi50">Wi-Fi 50+ Mbps</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-ev" onchange="applyFilters()"><label for="f-ev">EV charging</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-50amp" onchange="applyFilters()"><label for="f-50amp">50-amp hookup</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-pool" onchange="applyFilters()"><label for="f-pool">Pool / hot tub</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-laundry" onchange="applyFilters()"><label for="f-laundry">Laundry</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-cowork" onchange="applyFilters()"><label for="f-cowork">Co-working space</label></div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Stay length</div>
+        <div class="filter-option"><input type="checkbox" id="f-nightly" onchange="applyFilters()"><label for="f-nightly">Nightly stays</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-weekly" onchange="applyFilters()"><label for="f-weekly">Weekly stays</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-monthly" onchange="applyFilters()"><label for="f-monthly">Monthly / long-term</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-annual" onchange="applyFilters()"><label for="f-annual">Annual lease</label></div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Policies</div>
+        <div class="filter-option"><input type="checkbox" id="f-pets" onchange="applyFilters()"><label for="f-pets">Pets welcome</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-slideout" onchange="applyFilters()"><label for="f-slideout">Slide-outs allowed</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-55plus" onchange="applyFilters()"><label for="f-55plus">55+ community</label></div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Nightly price</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span class="text-sm text-muted">$0</span>
+          <span class="text-sm font-bold" id="priceDisplay">Up to $100</span>
+        </div>
+        <input type="range" class="range-slider" id="priceRange" min="20" max="200" value="100" step="5" oninput="updatePrice(this.value)">
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Minimum rating</div>
+        <div class="filter-option"><input type="radio" name="rating" value="0" checked onchange="applyFilters()"><label>Any rating</label></div>
+        <div class="filter-option"><input type="radio" name="rating" value="3" onchange="applyFilters()"><label>3+ stars</label></div>
+        <div class="filter-option"><input type="radio" name="rating" value="4" onchange="applyFilters()"><label>4+ stars</label></div>
+        <div class="filter-option"><input type="radio" name="rating" value="4.5" onchange="applyFilters()"><label>4.5+ stars only</label></div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Park type</div>
+        <div class="filter-option"><input type="checkbox" id="f-resort" onchange="applyFilters()"><label for="f-resort">RV Resort</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-camp" onchange="applyFilters()"><label for="f-camp">Campground</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-community" onchange="applyFilters()"><label for="f-community">RV Community</label></div>
+        <div class="filter-option"><input type="checkbox" id="f-statepark" onchange="applyFilters()"><label for="f-statepark">State Park</label></div>
+      </div>
+
+      <button class="btn btn-primary w-full" onclick="applyFilters()">Apply filters</button>
+    </aside>
+
+    <!-- Results -->
+    <div>
+      <div class="results-header">
+        <div>
+          <div class="results-count"><strong id="resultCount">6</strong> parks found</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="map-toggle" onclick="toggleMapView()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            Map view
+          </button>
+          <select class="sort-select" onchange="sortResults(this.value)">
+            <option value="rating">Sort: Top rated</option>
+            <option value="price_asc">Sort: Price (low to high)</option>
+            <option value="price_desc">Sort: Price (high to low)</option>
+            <option value="reviews">Sort: Most reviewed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="active-filters" id="activeFilters"></div>
+
+      <div class="map-view" id="mapView">
+        <div class="map-placeholder" style="margin-bottom:20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          <strong>Map View</strong>
+          <span>Connect Mapbox API key to enable interactive map with park pins, route planning, and real-time availability.</span>
+          <a href="docs/setup-guide.md" class="btn btn-secondary btn-sm">Setup instructions →</a>
+        </div>
+      </div>
+
+      <div class="park-list" id="parkList"></div>
+
+      <div class="pagination" id="pagination">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <span style="padding:0 8px;color:var(--slate-400)">…</span>
+        <button class="page-btn">24</button>
+        <button class="page-btn" style="width:auto;padding:0 12px">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div>
+      <a href="index.html" style="color:rgba(255,255,255,0.4);font-size:13px">← Back to home</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Modals reuse -->
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" onclick="showToast('Welcome! 🏕','success');closeModal('signupModal')">Create account</button></div></div></div>
+
+<script src="js/app.js"></script>
+<script>
+let currentParks = [...mockParks];
+
+function renderParks(parks) {
+  const list = document.getElementById('parkList');
+  document.getElementById('resultCount').textContent = parks.length;
+  if (!parks.length) {
+    list.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--slate-400)"><div style="font-size:48px;margin-bottom:12px">🔍</div><p>No parks match your filters. Try adjusting your search.</p></div>';
+    return;
+  }
+  list.innerHTML = parks.map((p, i) => `
+    <a href="park.html?id=${p.id}" class="park-list-card" style="display:grid;text-decoration:none">
+      <div class="park-list-img" style="background:${getParkColor(i)}22">🏕</div>
+      <div class="park-list-body">
+        <div class="park-list-state">${p.state} · ${p.city}</div>
+        <div class="park-list-name">${p.name}</div>
+        <div class="park-card-rating" style="margin-bottom:8px">
+          <span class="stars">${'★'.repeat(Math.round(p.rating))}</span>
+          <span class="rating-count"> ${p.rating} (${p.reviews} reviews)</span>
+        </div>
+        <div class="park-list-tags">
+          ${p.wifi?'<span class="tag wifi">📶 Wi-Fi</span>':''}
+          ${p.longstay?'<span class="tag longstay">🏠 Long stay</span>':''}
+          ${p.pets?'<span class="tag pets">🐾 Pets</span>':''}
+          ${p.ev?'<span class="tag ev">⚡ EV</span>':''}
+          <span class="tag">${p.type}</span>
+        </div>
+        ${p.wifi?`<div class="wifi-bar"><span class="wifi-speed">Wi-Fi:</span><div class="wifi-bar-bg"><div class="wifi-bar-fill" style="width:${Math.min(100,p.rating*18)}%"></div></div><span class="wifi-speed">${Math.round(p.rating*18)} Mbps avg</span></div>`:''}
+      </div>
+      <div class="park-list-right">
+        <div class="park-list-price">
+          <span class="price-amount">$${p.price}</span>
+          <span class="price-label">/night</span>
+          ${p.longstay?`<div class="monthly">$${p.monthly}/mo</div>`:''}
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px">Book now</button>
+      </div>
+    </a>`).join('');
+}
+
+function applyFilters() {
+  let parks = [...mockParks];
+  const price = parseInt(document.getElementById('priceRange').value);
+  parks = parks.filter(p => p.price <= price);
+  if(document.getElementById('f-wifi').checked) parks = parks.filter(p => p.wifi);
+  if(document.getElementById('f-ev').checked) parks = parks.filter(p => p.ev);
+  if(document.getElementById('f-monthly').checked) parks = parks.filter(p => p.longstay);
+  if(document.getElementById('f-pets').checked) parks = parks.filter(p => p.pets);
+  const ratingEl = document.querySelector('input[name="rating"]:checked');
+  const minRating = parseFloat(ratingEl?.value || 0);
+  if(minRating > 0) parks = parks.filter(p => p.rating >= minRating);
+  currentParks = parks;
+  renderParks(parks);
+}
+
+function sortResults(val) {
+  let parks = [...currentParks];
+  if(val==='rating') parks.sort((a,b)=>b.rating-a.rating);
+  else if(val==='price_asc') parks.sort((a,b)=>a.price-b.price);
+  else if(val==='price_desc') parks.sort((a,b)=>b.price-a.price);
+  else if(val==='reviews') parks.sort((a,b)=>b.reviews-a.reviews);
+  renderParks(parks);
+}
+
+function updatePrice(val) {
+  document.getElementById('priceDisplay').textContent = val >= 200 ? 'Any price' : `Up to $${val}`;
+  applyFilters();
+}
+
+function clearFilters() {
+  document.querySelectorAll('.filter-sidebar input[type=checkbox]').forEach(c=>c.checked=false);
+  document.querySelector('input[name="rating"]').checked=true;
+  document.getElementById('priceRange').value=200;
+  document.getElementById('priceDisplay').textContent='Any price';
+  currentParks=[...mockParks];
+  renderParks(currentParks);
+}
+
+function toggleMapView() {
+  const mapView = document.getElementById('mapView');
+  mapView.classList.toggle('active');
+}
+
+// Parse URL params
+const params = new URLSearchParams(location.search);
+if(params.get('q')) document.getElementById('searchQ').value = params.get('q');
+if(params.get('wifi')==='on') document.getElementById('f-wifi').checked=true;
+if(params.get('longstay')==='on') document.getElementById('f-monthly').checked=true;
+if(params.get('ev')==='on') document.getElementById('f-ev').checked=true;
+
+renderParks(mockParks);
+applyFilters();
+</script>
+</body>
+</html>

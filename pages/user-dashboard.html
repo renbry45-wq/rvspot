@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My RVSpot — Traveler Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body { background:var(--cream-100); }
+    .dash-wrap { display:grid; grid-template-columns:220px 1fr; min-height:100vh; }
+    .sidebar { background:var(--green-900); position:sticky; top:0; height:100vh; overflow-y:auto; }
+    .sidebar-top { padding:24px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .sidebar-name { font-size:15px; font-weight:600; color:var(--white); }
+    .sidebar-plan { font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px; }
+    .sidebar-avatar { width:48px; height:48px; border-radius:50%; background:var(--green-700); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; color:var(--white); margin-bottom:12px; }
+    .nav-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,0.3); padding:12px 20px 4px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:14px; color:rgba(255,255,255,0.55); cursor:pointer; transition:all .2s; text-decoration:none; }
+    .nav-item:hover { background:rgba(255,255,255,0.06); color:var(--white); }
+    .nav-item.active { background:rgba(255,255,255,0.1); color:var(--green-400); }
+    .main { padding:32px; }
+    .page-title { font-family:var(--font-display); font-size:24px; font-weight:700; margin-bottom:4px; }
+    .booking-card-trip { background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--cream-300); padding:20px; display:flex; gap:20px; align-items:flex-start; margin-bottom:16px; }
+    .trip-img { width:80px; height:80px; border-radius:var(--radius-md); background:var(--green-100); display:flex; align-items:center; justify-content:center; font-size:32px; flex-shrink:0; }
+    .trip-name { font-weight:700; font-size:15px; color:var(--slate-900); margin-bottom:3px; }
+    .trip-dates { font-size:13px; color:var(--slate-500); margin-bottom:8px; }
+    .saved-card { background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--cream-300); padding:16px; display:flex; gap:14px; align-items:center; }
+    .saved-img { width:60px; height:60px; border-radius:var(--radius-md); background:var(--green-100); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+    @media(max-width:768px){ .dash-wrap{grid-template-columns:1fr;} .sidebar{display:none;} }
+  </style>
+</head>
+<body>
+<div class="dash-wrap">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-avatar">MR</div>
+      <div class="sidebar-name">Marcus R.</div>
+      <div class="sidebar-plan">Nomad Pro · Active ✓</div>
+    </div>
+    <div class="nav-label">My trips</div>
+    <a class="nav-item active" href="#">🏕 Dashboard</a>
+    <a class="nav-item" href="#">📅 Bookings</a>
+    <a class="nav-item" href="#">♥ Saved parks</a>
+    <a class="nav-item" href="#">⭐ My reviews</a>
+    <div class="nav-label">Tools</div>
+    <a class="nav-item" href="../routes.html">🗺 Route planner</a>
+    <a class="nav-item" href="#">📶 Wi-Fi speed tests</a>
+    <a class="nav-item" href="#">👥 Caravans</a>
+    <a class="nav-item" href="#">💼 Job board</a>
+    <div class="nav-label">Account</div>
+    <a class="nav-item" href="#">👤 Profile</a>
+    <a class="nav-item" href="#">⚙️ Settings</a>
+    <a class="nav-item" href="../index.html">← RVSpot home</a>
+  </aside>
+  <main class="main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="page-title">Welcome back, Marcus 🏕</div>
+        <div style="font-size:14px;color:var(--slate-400)">Nomad Pro · Member since January 2025</div>
+      </div>
+      <a href="../search.html" class="btn btn-primary">Find next park →</a>
+    </div>
+
+    <!-- Nomad stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px">
+      <div class="metric-card"><div class="metric-label">Parks visited</div><div class="metric-value">14</div></div>
+      <div class="metric-card"><div class="metric-label">Miles traveled</div><div class="metric-value">8,420</div></div>
+      <div class="metric-card"><div class="metric-label">Reviews written</div><div class="metric-value">11</div></div>
+      <div class="metric-card"><div class="metric-label">Saved with Pro</div><div class="metric-value" style="color:var(--green-700)">$312</div></div>
+    </div>
+
+    <!-- Upcoming -->
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--cream-300);padding:24px;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-size:16px;font-weight:700">Upcoming bookings</h3>
+        <button class="btn btn-secondary btn-sm">View all</button>
+      </div>
+      <div class="booking-card-trip">
+        <div class="trip-img">🏕</div>
+        <div style="flex:1">
+          <div class="trip-name">Pineview Lake RV Resort</div>
+          <div class="trip-dates">Apr 3 – Jul 3, 2026 · 3 months · Austin, TX</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span class="badge badge-green">Confirmed</span>
+            <span class="tag wifi">📶 Wi-Fi verified</span>
+            <span class="tag longstay">🏠 Long stay</span>
+          </div>
+          <div style="margin-top:10px;font-size:14px;font-weight:600;color:var(--slate-900)">$1,950 total · Site 42 pull-through</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="showToast('Opening booking details…','success')">View details</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Check-in instructions sent to your email.','success')">Check-in info</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved parks -->
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--cream-300);padding:24px;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-size:16px;font-weight:700">Saved parks</h3>
+        <a href="../search.html" class="btn btn-secondary btn-sm">Browse more</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+        <div class="saved-card"><div class="saved-img">🌵</div><div><div style="font-weight:600;font-size:14px">Desert Rose RV Park</div><div style="font-size:12px;color:var(--slate-400)">Scottsdale, AZ · ★★★★★ 4.9</div><div style="font-size:13px;color:var(--green-700);font-weight:600;margin-top:4px">$42/night · $580/month</div></div><button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="window.location='../park.html?id=5'">View →</button></div>
+        <div class="saved-card"><div class="saved-img">🌊</div><div><div style="font-weight:600;font-size:14px">Blue Ridge Mountain Camp</div><div style="font-size:12px;color:var(--slate-400)">Asheville, NC · ★★★★★ 4.6</div><div style="font-size:13px;color:var(--green-700);font-weight:600;margin-top:4px">$38/night · $520/month</div></div><button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="window.location='../park.html?id=2'">View →</button></div>
+      </div>
+    </div>
+
+    <!-- Route suggestion + Pro upsell -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--cream-300);padding:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">🗺 Your saved route</h3>
+        <div style="font-size:14px;color:var(--slate-600);margin-bottom:8px">Austin TX → Asheville NC → Fort Myers FL</div>
+        <div style="font-size:13px;color:var(--slate-400);margin-bottom:16px">3 parks · 1,840 miles · 4 EV stops</div>
+        <a href="../routes.html" class="btn btn-secondary btn-sm">Open route planner →</a>
+      </div>
+      <div style="background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-lg);padding:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--green-800)">📶 Submit a Wi-Fi test</h3>
+        <p style="font-size:14px;color:var(--green-700);margin-bottom:16px">You're currently at Pineview Lake. Help the community by submitting your current Wi-Fi speed.</p>
+        <button class="btn btn-primary btn-sm" onclick="showToast('Opening speed test submission form…','success')">Submit speed test</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="../js/app.js"></script>
+</body>
+</html>

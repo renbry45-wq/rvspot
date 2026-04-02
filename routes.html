@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RV Route Planner — RVSpot</title>
+  <meta name="description" content="Plan your RV trip with parks, dump stations, EV chargers, and fuel stops mapped along your route. Free for all users, enhanced for Nomad Pro members.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .planner-layout { display:grid; grid-template-columns:380px 1fr; gap:0; height:calc(100vh - 68px); }
+    .planner-sidebar { background:var(--white); border-right:1px solid var(--cream-300); overflow-y:auto; display:flex; flex-direction:column; }
+    .planner-sidebar-header { padding:20px; border-bottom:1px solid var(--cream-300); background:var(--green-900); color:var(--white); }
+    .planner-sidebar-header h2 { font-size:20px; margin-bottom:4px; }
+    .planner-sidebar-header p { font-size:13px; color:rgba(255,255,255,0.6); }
+    .route-builder { padding:20px; border-bottom:1px solid var(--cream-300); }
+    .route-stop { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .stop-indicator { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    .stop-start { background:var(--green-800); color:var(--white); }
+    .stop-middle { background:var(--amber-500); color:var(--white); }
+    .stop-end { background:var(--slate-700); color:var(--white); }
+    .stop-line { width:2px; height:20px; background:var(--cream-300); margin-left:13px; }
+    .route-stop input { flex:1; padding:9px 12px; border:1.5px solid var(--cream-300); border-radius:var(--radius-md); font-size:13px; }
+    .route-stop input:focus { border-color:var(--green-600); outline:none; }
+    .filter-chips { display:flex; flex-wrap:wrap; gap:6px; padding:16px 20px; border-bottom:1px solid var(--cream-300); }
+    .chip { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--cream-300); background:var(--white); color:var(--slate-600); transition:all .2s; }
+    .chip.active { background:var(--green-800); color:var(--white); border-color:var(--green-800); }
+    .stops-list { flex:1; overflow-y:auto; }
+    .stop-card { padding:16px 20px; border-bottom:1px solid var(--cream-200); display:flex; gap:12px; align-items:flex-start; cursor:pointer; transition:background .15s; }
+    .stop-card:hover { background:var(--green-50); }
+    .stop-icon { width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .stop-card-name { font-weight:600; font-size:14px; color:var(--slate-900); margin-bottom:2px; }
+    .stop-card-sub { font-size:12px; color:var(--slate-400); }
+    .stop-card-distance { font-size:12px; font-weight:600; color:var(--green-700); margin-top:4px; }
+    .map-area { background:var(--green-50); position:relative; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; border:none; }
+    .map-message { text-align:center; max-width:400px; color:var(--slate-500); }
+    .map-message h3 { font-size:18px; margin-bottom:10px; color:var(--slate-900); }
+    .map-message p { font-size:14px; line-height:1.7; }
+    .route-summary { padding:16px 20px; background:var(--green-50); border-top:1px solid var(--green-100); }
+    .route-stat { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+    .route-stat strong { color:var(--slate-900); }
+    @media(max-width:900px){ .planner-layout{grid-template-columns:1fr;height:auto;} .map-area{height:300px;} }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html" class="active">Route Planner</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<div class="planner-layout">
+  <div class="planner-sidebar">
+    <div class="planner-sidebar-header">
+      <h2>🗺 Route Planner</h2>
+      <p>Plan your route with parks, EV stops, fuel, and dump stations</p>
+    </div>
+
+    <div class="route-builder">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:12px">Your route</div>
+      <div class="route-stop">
+        <div class="stop-indicator stop-start">A</div>
+        <input type="text" id="startPoint" placeholder="Starting point (city or zip)…" value="Austin, TX">
+      </div>
+      <div class="stop-line"></div>
+      <div class="route-stop" id="waypointContainer">
+        <div class="stop-indicator stop-middle">B</div>
+        <input type="text" placeholder="Add a stop…" value="Asheville, NC">
+      </div>
+      <div class="stop-line"></div>
+      <button style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--green-700);background:none;border:none;cursor:pointer;padding:4px 0;margin-left:36px;margin-bottom:8px" onclick="addWaypoint()">+ Add another stop</button>
+      <div class="route-stop">
+        <div class="stop-indicator stop-end">C</div>
+        <input type="text" placeholder="Destination…" value="Fort Myers, FL">
+      </div>
+      <button class="btn btn-primary w-full" style="margin-top:16px" onclick="planRoute()">Plan this route</button>
+    </div>
+
+    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-300)">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:8px">Show along route</div>
+      <div class="filter-chips">
+        <div class="chip active" onclick="this.classList.toggle('active')">🏕 RV Parks</div>
+        <div class="chip active" onclick="this.classList.toggle('active')">⛽ Fuel stops</div>
+        <div class="chip active" onclick="this.classList.toggle('active')">🗑 Dump stations</div>
+        <div class="chip" onclick="this.classList.toggle('active')">⚡ EV charging</div>
+        <div class="chip" onclick="this.classList.toggle('active')">🔧 RV repair</div>
+        <div class="chip" onclick="this.classList.toggle('active')">🏥 Hospitals</div>
+      </div>
+    </div>
+
+    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-300)">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:8px">Rig preferences</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label class="form-label" style="font-size:11px">Rig length</label><select style="padding:7px 10px;font-size:13px"><option>Up to 35 ft</option><option>36–45 ft</option><option>45+ ft</option></select></div>
+        <div><label class="form-label" style="font-size:11px">Max nightly</label><select style="padding:7px 10px;font-size:13px"><option>Any price</option><option>Up to $40</option><option>Up to $60</option><option>Up to $80</option></select></div>
+      </div>
+    </div>
+
+    <!-- Route results -->
+    <div class="stops-list" id="stopsList">
+      <div style="padding:14px 20px;background:var(--green-50);border-bottom:1px solid var(--green-100)">
+        <div style="font-size:13px;font-weight:700;color:var(--green-800)">Planned route: Austin → Asheville → Fort Myers</div>
+        <div class="route-stat mt-8"><span>Total distance</span><strong>1,840 miles</strong></div>
+        <div class="route-stat"><span>Estimated drive time</span><strong>28 hours</strong></div>
+        <div class="route-stat"><span>RV parks found</span><strong>18 along route</strong></div>
+        <div class="route-stat"><span>EV stops</span><strong>4 available</strong></div>
+      </div>
+      <div style="padding:12px 20px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-400)">Recommended stops</div>
+
+      <div class="stop-card" onclick="window.open('../park.html?id=1','_self')">
+        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
+        <div>
+          <div class="stop-card-name">Pineview Lake RV Resort</div>
+          <div class="stop-card-sub">Austin, TX · Start point · ★★★★★ 4.8</div>
+          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag wifi" style="font-size:11px">📶 94 Mbps</span><span class="tag longstay" style="font-size:11px">🏠 Long stay</span></div>
+        </div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$45/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
+      </div>
+
+      <div class="stop-card">
+        <div class="stop-icon" style="background:#fff3e0">⛽</div>
+        <div>
+          <div class="stop-card-name">Love's Travel Stop — Natchez, MS</div>
+          <div class="stop-card-sub">MP 310 · Full hookup overnight · Dump station</div>
+          <div class="stop-card-distance">↓ 420 miles from Austin</div>
+        </div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:13px;color:var(--slate-500)">$25/night</div></div>
+      </div>
+
+      <div class="stop-card" onclick="window.open('../park.html?id=2','_self')">
+        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
+        <div>
+          <div class="stop-card-name">Blue Ridge Mountain Camp</div>
+          <div class="stop-card-sub">Asheville, NC · ★★★★☆ 4.6 · Waypoint B</div>
+          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag wifi" style="font-size:11px">📶 Wi-Fi</span><span class="tag ev" style="font-size:11px">⚡ EV</span></div>
+        </div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$38/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
+      </div>
+
+      <div class="stop-card">
+        <div class="stop-icon" style="background:#e8f4fd">⚡</div>
+        <div>
+          <div class="stop-card-name">Tesla Supercharger — Savannah, GA</div>
+          <div class="stop-card-sub">16 stalls · 250kW · 24 hours</div>
+          <div class="stop-card-distance">↓ 320 miles from Asheville</div>
+        </div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:13px;color:var(--slate-500)">$0.32/kWh</div></div>
+      </div>
+
+      <div class="stop-card" onclick="window.open('../park.html?id=3','_self')">
+        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
+        <div>
+          <div class="stop-card-name">Sunbelt RV Community</div>
+          <div class="stop-card-sub">Fort Myers, FL · ★★★★★ 4.7 · Destination</div>
+          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag ev" style="font-size:11px">⚡ EV</span><span class="tag longstay" style="font-size:11px">🏠 Long stay</span></div>
+        </div>
+        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$55/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
+      </div>
+
+      <div style="padding:16px 20px;background:var(--amber-100);border-top:1px solid var(--amber-300)">
+        <div style="font-size:13px;font-weight:600;color:var(--amber-800);margin-bottom:4px">🔒 Nomad Pro: Offline route access</div>
+        <div style="font-size:12px;color:var(--amber-700)">Save this route for offline GPS navigation, get park discounts, and see real-time road conditions. <a href="pages/nomad-pro.html" style="font-weight:600;text-decoration:underline">Upgrade for $9/mo →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-area">
+    <div style="font-size:80px">🗺</div>
+    <div class="map-message">
+      <h3>Interactive route map</h3>
+      <p>Once the Mapbox API key is configured, this area displays an interactive route map with park pins, real-time traffic, EV charger locations, dump stations, and fuel stops along your route.</p>
+      <a href="docs/setup-guide.md" class="btn btn-primary" style="margin-top:16px">Setup Mapbox →</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" onclick="showToast('Welcome! 🏕','success');closeModal('signupModal')">Create account</button></div></div></div>
+
+<script src="js/app.js"></script>
+<script>
+let waypointCount = 1;
+function addWaypoint() {
+  waypointCount++;
+  const container = document.getElementById('waypointContainer');
+  const newStop = document.createElement('div');
+  newStop.className = 'route-stop';
+  newStop.innerHTML = `<div class="stop-indicator stop-middle">${String.fromCharCode(65+waypointCount)}</div><input type="text" placeholder="Add a stop…">`;
+  container.parentNode.insertBefore(newStop, container.nextSibling);
+  showToast('Stop added to route','success');
+}
+function planRoute() {
+  showToast('Route calculated! 1,840 miles · 18 parks found','success');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Park Details — RVSpot</title>
+  <meta name="description" content="Detailed park listing with photos, reviews, amenities, Wi-Fi ratings, and real-time booking.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .park-hero { background:var(--green-900); height:360px; display:flex; align-items:center; justify-content:center; font-size:80px; position:relative; }
+    .park-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%); }
+    .park-hero-info { position:absolute; bottom:24px; left:24px; right:24px; }
+    .park-hero-state { font-size:12px; font-weight:700; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:.08em; }
+    .park-hero-name { font-family:var(--font-display); font-size:clamp(1.6rem,4vw,2.8rem); font-weight:700; color:var(--white); }
+    .park-hero-rating { display:flex; align-items:center; gap:8px; margin-top:8px; }
+    .park-layout { display:grid; grid-template-columns:1fr 340px; gap:32px; padding:32px 0; }
+    .park-section { margin-bottom:32px; }
+    .park-section h3 { font-size:18px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--cream-300); }
+    .amenity-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+    .amenity-item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--cream-100); border-radius:var(--radius-md); font-size:14px; }
+    .amenity-icon { font-size:18px; }
+    .amenity-check { margin-left:auto; color:var(--green-600); font-weight:700; }
+    .amenity-x { margin-left:auto; color:var(--slate-300); }
+    .wifi-detail { background:var(--green-50); border:1px solid var(--green-200); border-radius:var(--radius-lg); padding:20px; margin-bottom:20px; }
+    .wifi-speed-big { font-family:var(--font-display); font-size:2.5rem; font-weight:700; color:var(--green-800); }
+    .wifi-speed-unit { font-size:14px; color:var(--slate-500); }
+    .wifi-breakdown { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+    .wifi-stat { background:var(--white); border-radius:var(--radius-md); padding:12px; text-align:center; }
+    .wifi-stat-val { font-weight:700; font-size:16px; color:var(--slate-900); }
+    .wifi-stat-label { font-size:11px; color:var(--slate-400); margin-top:2px; }
+    .booking-card { background:var(--white); border-radius:var(--radius-xl); border:2px solid var(--cream-300); padding:24px; position:sticky; top:90px; }
+    .booking-price-row { display:flex; align-items:baseline; gap:4px; margin-bottom:6px; }
+    .booking-price { font-family:var(--font-display); font-size:2rem; font-weight:700; color:var(--slate-900); }
+    .booking-price-unit { font-size:14px; color:var(--slate-400); }
+    .booking-monthly { font-size:15px; color:var(--green-700); font-weight:600; margin-bottom:16px; }
+    .booking-dates { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--cream-300); border-radius:var(--radius-md); overflow:hidden; margin-bottom:12px; }
+    .booking-date-field { background:var(--white); padding:12px 14px; }
+    .booking-date-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--slate-500); display:block; margin-bottom:4px; }
+    .booking-date-field input { border:none; font-size:14px; font-weight:600; padding:0; width:100%; }
+    .booking-summary { border-top:1px solid var(--cream-300); padding-top:16px; margin-top:16px; }
+    .booking-line { display:flex; justify-content:space-between; font-size:14px; color:var(--slate-600); margin-bottom:8px; }
+    .booking-line.total { font-weight:700; color:var(--slate-900); font-size:16px; border-top:1px solid var(--cream-300); padding-top:12px; margin-top:4px; }
+    .park-map { background:var(--green-50); border-radius:var(--radius-lg); height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid var(--green-200); color:var(--green-700); font-size:14px; gap:8px; margin-bottom:24px; }
+    .review-form { background:var(--cream-100); border-radius:var(--radius-lg); padding:24px; margin-bottom:24px; }
+    .review-form h4 { margin-bottom:16px; }
+    .nearby-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+    @media(max-width:900px){ .park-layout{grid-template-columns:1fr;} .booking-card{position:static;} }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<div id="parkHero" class="park-hero">
+  <span id="heroEmoji">🏕</span>
+  <div class="park-hero-overlay"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div class="park-hero-info">
+      <div class="park-hero-state" id="heroState">Texas · Austin</div>
+      <div class="park-hero-name" id="heroName">Pineview Lake RV Resort</div>
+      <div class="park-hero-rating">
+        <span class="stars" id="heroStars">★★★★★</span>
+        <span style="color:rgba(255,255,255,0.8);font-size:14px" id="heroRating">4.8 · 124 reviews</span>
+        <span class="badge badge-verified" style="margin-left:8px">Verified Pro Park</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Breadcrumb -->
+<div style="background:var(--white);border-bottom:1px solid var(--cream-300);padding:12px 0">
+  <div class="container">
+    <div style="font-size:13px;color:var(--slate-400);display:flex;gap:8px;align-items:center">
+      <a href="index.html" style="color:var(--green-700)">Home</a> /
+      <a href="search.html" style="color:var(--green-700)">Find Parks</a> /
+      <span id="bcName">Pineview Lake RV Resort</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="park-layout">
+    <!-- Main content -->
+    <div>
+      <div data-tabs>
+        <div class="tabs-nav">
+          <button class="tab-btn">Overview</button>
+          <button class="tab-btn">Amenities</button>
+          <button class="tab-btn">Reviews</button>
+          <button class="tab-btn">Wi-Fi</button>
+          <button class="tab-btn">Location</button>
+        </div>
+
+        <!-- Overview tab -->
+        <div class="tab-panel park-section">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px" id="parkTags"></div>
+          <p id="parkDesc" style="font-size:15px;color:var(--slate-600);line-height:1.8;margin-bottom:20px"></p>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+            <div class="metric-card">
+              <div class="metric-label">Nightly rate</div>
+              <div class="metric-value" id="pkNightly">$45</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Monthly rate</div>
+              <div class="metric-value" id="pkMonthly">$650</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Total sites</div>
+              <div class="metric-value">142</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Avg Wi-Fi</div>
+              <div class="metric-value" style="color:var(--green-700)">94 Mbps</div>
+            </div>
+          </div>
+
+          <h3>About this park</h3>
+          <p style="font-size:14px;color:var(--slate-600);line-height:1.8">A premier full-hookup RV resort nestled on the shores of Lake Travis, offering spectacular Hill Country views and world-class amenities. Perfect for full-timers, extended stays, and work-from-RV travelers who need reliable high-speed internet.</p>
+          <p style="font-size:14px;color:var(--slate-600);line-height:1.8;margin-top:12px">All sites include 50-amp electric, water, sewer, and cable TV. The park features a dedicated co-working lounge with fiber internet, a resort-style pool, dog park, and daily organized activities. Long-stay residents enjoy discounted monthly rates and a dedicated resident community manager.</p>
+        </div>
+
+        <!-- Amenities tab -->
+        <div class="tab-panel park-section">
+          <h3>All amenities</h3>
+          <div class="amenity-grid">
+            <div class="amenity-item"><span class="amenity-icon">📶</span>High-speed Wi-Fi<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">⚡</span>50-amp hookups<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🔌</span>EV charging<span class="amenity-x">✗</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🏊</span>Swimming pool<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🛁</span>Bath house<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">👔</span>Laundry facilities<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">💻</span>Co-working lounge<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🐾</span>Pets welcome<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🐕</span>Dog park<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">📮</span>Mail service<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🏪</span>On-site store<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🔧</span>RV service<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🗑</span>Dump station<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🔒</span>Gated entry<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">📺</span>Cable TV<span class="amenity-check">✓</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🌊</span>Waterfront sites<span class="amenity-check">✓</span></div>
+          </div>
+
+          <div style="margin-top:24px">
+            <h3>Hookup options</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+              <div class="amenity-item"><span class="amenity-icon">💧</span>Water<span class="amenity-check">✓</span></div>
+              <div class="amenity-item"><span class="amenity-icon">🔌</span>30-amp<span class="amenity-check">✓</span></div>
+              <div class="amenity-item"><span class="amenity-icon">⚡</span>50-amp<span class="amenity-check">✓</span></div>
+              <div class="amenity-item"><span class="amenity-icon">🚿</span>Sewer<span class="amenity-check">✓</span></div>
+              <div class="amenity-item"><span class="amenity-icon">📡</span>Cable<span class="amenity-check">✓</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews tab -->
+        <div class="tab-panel park-section">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;margin-bottom:24px;background:var(--cream-100);border-radius:var(--radius-lg);padding:20px">
+            <div style="text-align:center">
+              <div style="font-family:var(--font-display);font-size:4rem;font-weight:700;color:var(--green-800);line-height:1">4.8</div>
+              <div style="color:var(--amber-500);font-size:20px;letter-spacing:2px">★★★★★</div>
+              <div style="font-size:13px;color:var(--slate-400);margin-top:4px">124 reviews</div>
+            </div>
+            <div>
+              <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;width:60px;color:var(--slate-500)">Location</span><div style="flex:1;height:6px;background:var(--cream-300);border-radius:3px"><div style="width:92%;height:6px;background:var(--green-600);border-radius:3px"></div></div><span style="font-size:12px;color:var(--slate-500)">4.6</span></div>
+              <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;width:60px;color:var(--slate-500)">Wi-Fi</span><div style="flex:1;height:6px;background:var(--cream-300);border-radius:3px"><div style="width:96%;height:6px;background:var(--green-600);border-radius:3px"></div></div><span style="font-size:12px;color:var(--slate-500)">4.8</span></div>
+              <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;width:60px;color:var(--slate-500)">Cleanliness</span><div style="flex:1;height:6px;background:var(--cream-300);border-radius:3px"><div style="width:98%;height:6px;background:var(--green-600);border-radius:3px"></div></div><span style="font-size:12px;color:var(--slate-500)">4.9</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;width:60px;color:var(--slate-500)">Value</span><div style="flex:1;height:6px;background:var(--cream-300);border-radius:3px"><div style="width:82%;height:6px;background:var(--green-600);border-radius:3px"></div></div><span style="font-size:12px;color:var(--slate-500)">4.1</span></div>
+            </div>
+          </div>
+
+          <!-- Review form -->
+          <div class="review-form">
+            <h4>Write a review</h4>
+            <p class="text-sm text-muted mb-16">Share your experience to help other RVers make the right choice.</p>
+            <div class="form-group">
+              <label class="form-label">Your overall rating</label>
+              <div class="star-rating-input" style="font-size:28px;cursor:pointer">
+                <span class="star" onclick="setRating(1)">★</span>
+                <span class="star" onclick="setRating(2)">★</span>
+                <span class="star" onclick="setRating(3)">★</span>
+                <span class="star" onclick="setRating(4)">★</span>
+                <span class="star" onclick="setRating(5)">★</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div class="form-group mb-0"><label class="form-label">Your rig type</label><select><option>Travel trailer</option><option>5th wheel</option><option>Class A motorhome</option><option>Class B van</option><option>Class C</option></select></div>
+              <div class="form-group mb-0"><label class="form-label">Stay length</label><select><option>1–3 nights</option><option>1 week</option><option>1 month</option><option>3+ months</option><option>Annual</option></select></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Wi-Fi speed you experienced</label>
+              <input type="text" placeholder="e.g. 85 Mbps download, 42 Mbps upload">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your review</label>
+              <textarea rows="4" placeholder="Tell other RVers what you loved, what could be better, and any tips for arriving or setting up…" style="resize:vertical"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="submitReview()">Submit review</button>
+            <span class="text-sm text-muted" style="margin-left:12px">Reviews are moderated within 24 hours</span>
+          </div>
+
+          <!-- Existing reviews -->
+          <div id="reviewsList">
+            <div class="review-card"><div class="review-header"><div class="reviewer"><div class="reviewer-avatar">MR</div><div><div class="reviewer-name">Marcus R.</div><div class="reviewer-date">March 2026 · 3-month stay · Class B van</div></div></div><div style="text-align:right"><div class="stars">★★★★★</div><span class="badge badge-verified">Verified stay</span></div></div><div class="review-body">The co-working lounge with fiber is the real deal — I averaged 94 Mbps throughout my 3-month stay. Zero outages. The staff is incredibly helpful for long-stay residents. Pool is gorgeous. The only reason this isn't 5 stars across the board is the price has gone up since I first came here — but honestly worth it.</div><div class="review-tags"><span class="tag wifi">Wi-Fi: 94 Mbps</span><span class="tag longstay">Long stay verified</span></div></div>
+            <div class="review-card"><div class="review-header"><div class="reviewer"><div class="reviewer-avatar" style="background:var(--amber-100);color:var(--amber-700)">LT</div><div><div class="reviewer-name">Lisa & Tom H.</div><div class="reviewer-date">February 2026 · 2 weeks · 42-ft Class A</div></div></div><div style="text-align:right"><div class="stars">★★★★★</div><span class="badge badge-verified">Verified stay</span></div></div><div class="review-body">The pull-through sites are perfectly level and the 50-amp service is rock solid. Lake views from our site every morning. Absolutely will be coming back — this is our winter anchor from now on. The staff organized a group activity for long-stayers that was a wonderful way to meet fellow travelers.</div><div class="review-tags"><span class="tag">42ft rig fits</span><span class="tag pets">Dog-friendly</span></div></div>
+            <div class="review-card"><div class="review-header"><div class="reviewer"><div class="reviewer-avatar" style="background:#e8f4fd;color:#1565c0">SR</div><div><div class="reviewer-name">Sarah K.</div><div class="reviewer-date">January 2026 · 1 week · Travel trailer</div></div></div><div style="text-align:right"><div class="stars" style="color:var(--amber-500)">★★★★☆</div></div></div><div class="review-body">Beautiful resort. The bathhouses are spotless. I docked one star because some of the sites near the road get traffic noise but the waterfront sites are incredible. The on-site store is well-stocked — saved me a 20-minute drive into town. The monthly rate is genuinely competitive for this level of quality.</div></div>
+          </div>
+          <button class="btn btn-secondary" style="margin-top:12px" onclick="showToast('Loading more reviews...','success')">Load more reviews (121 more)</button>
+        </div>
+
+        <!-- Wi-Fi tab -->
+        <div class="tab-panel park-section">
+          <div class="wifi-detail">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green-600);margin-bottom:6px">Average Wi-Fi speed</div>
+                <div><span class="wifi-speed-big">94</span> <span class="wifi-speed-unit">Mbps download</span></div>
+                <div style="font-size:13px;color:var(--slate-500);margin-top:4px">Based on 47 speed tests from verified stays</div>
+              </div>
+              <div><span class="badge badge-green" style="font-size:14px;padding:6px 14px">Excellent for remote work</span></div>
+            </div>
+            <div class="wifi-breakdown">
+              <div class="wifi-stat"><div class="wifi-stat-val">94 Mbps</div><div class="wifi-stat-label">Avg download</div></div>
+              <div class="wifi-stat"><div class="wifi-stat-val">48 Mbps</div><div class="wifi-stat-label">Avg upload</div></div>
+              <div class="wifi-stat"><div class="wifi-stat-val">12 ms</div><div class="wifi-stat-label">Avg latency</div></div>
+              <div class="wifi-stat"><div class="wifi-stat-val">99.2%</div><div class="wifi-stat-label">Uptime (6 months)</div></div>
+            </div>
+          </div>
+          <h3>Speed test history</h3>
+          <p class="text-sm text-muted mb-16">All speed tests are submitted by verified guests. Tests are timestamped and cannot be edited after submission.</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--white);border-radius:var(--radius-md);border:1px solid var(--cream-300);font-size:13px">
+              <span style="color:var(--slate-500)">Mar 15, 2026 · 2:30 PM</span>
+              <span style="font-weight:600">↓ 98 Mbps · ↑ 52 Mbps · 11ms</span>
+              <span class="badge badge-green">Excellent</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--white);border-radius:var(--radius-md);border:1px solid var(--cream-300);font-size:13px">
+              <span style="color:var(--slate-500)">Mar 12, 2026 · 10:15 AM</span>
+              <span style="font-weight:600">↓ 88 Mbps · ↑ 44 Mbps · 13ms</span>
+              <span class="badge badge-green">Excellent</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--white);border-radius:var(--radius-md);border:1px solid var(--cream-300);font-size:13px">
+              <span style="color:var(--slate-500)">Mar 8, 2026 · 7:45 PM</span>
+              <span style="font-weight:600">↓ 104 Mbps · ↑ 51 Mbps · 9ms</span>
+              <span class="badge badge-green">Excellent</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm mt-16" onclick="showToast('Add speed test — requires a verified stay booking','success')">+ Submit your speed test</button>
+        </div>
+
+        <!-- Location tab -->
+        <div class="tab-panel park-section">
+          <div class="park-map">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            <strong>Interactive map loading…</strong>
+            <span>Mapbox integration connects here. <a href="docs/setup-guide.md" style="color:var(--green-700)">Setup guide →</a></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+            <div class="amenity-item"><span class="amenity-icon">🛒</span>HEB Grocery<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">4.2 mi</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🏥</span>St. David's Hospital<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">8.1 mi</span></div>
+            <div class="amenity-item"><span class="amenity-icon">⛽</span>Gas station<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">1.8 mi</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🗑</span>Dump station<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">On-site</span></div>
+            <div class="amenity-item"><span class="amenity-icon">🔧</span>RV repair<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">6.3 mi</span></div>
+            <div class="amenity-item"><span class="amenity-icon">✈️</span>Austin Airport<span style="margin-left:auto;font-size:12px;color:var(--slate-400)">24 mi</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking sidebar -->
+    <div>
+      <div class="booking-card">
+        <div class="booking-price-row">
+          <span class="booking-price" id="bookPrice">$45</span>
+          <span class="booking-price-unit">/night</span>
+        </div>
+        <div class="booking-monthly" id="bookMonthly">or $650/month for long stays</div>
+        <div class="park-card-rating mb-16">
+          <span class="stars">★★★★★</span>
+          <span class="rating-count">4.8 · 124 reviews</span>
+        </div>
+
+        <div class="form-group mb-0">
+          <label class="form-label">Stay type</label>
+          <select id="stayType" onchange="updateBooking()" style="margin-bottom:12px">
+            <option value="nightly">Nightly</option>
+            <option value="weekly">Weekly (7 nights)</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+
+        <div class="booking-dates">
+          <div class="booking-date-field">
+            <label>Check-in</label>
+            <input type="date" id="checkIn" onchange="updateBooking()">
+          </div>
+          <div class="booking-date-field">
+            <label>Check-out</label>
+            <input type="date" id="checkOut" onchange="updateBooking()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rig length</label>
+          <select><option>Up to 25 ft</option><option>26–35 ft</option><option>36–45 ft</option><option>45+ ft</option></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Guests</label>
+          <select><option>1 adult</option><option>2 adults</option><option>2 adults + children</option></select>
+        </div>
+
+        <button class="btn btn-primary w-full btn-lg" onclick="initiateBooking()">Reserve now</button>
+        <p class="text-center mt-8 text-sm text-muted">You won't be charged yet</p>
+
+        <div class="booking-summary" id="bookingSummary">
+          <div class="booking-line"><span id="nightsLabel">$45 × 3 nights</span><span id="nightsTotal">$135</span></div>
+          <div class="booking-line"><span>RVSpot service fee</span><span>$12</span></div>
+          <div class="booking-line"><span>Taxes & fees</span><span>$18</span></div>
+          <div class="booking-line total"><span>Total</span><span id="bookingTotal">$165</span></div>
+        </div>
+
+        <hr>
+        <div style="display:flex;gap:12px;margin-top:4px">
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Park saved to your favorites ♥','success')">♥ Save park</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Share link copied to clipboard','success')">↗ Share</button>
+          <button class="btn btn-ghost btn-sm" onclick="openModal('contactModal')">✉ Contact park</button>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-lg);padding:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--green-800);margin-bottom:6px">🏕 Nomad Pro members save 15%</div>
+        <div style="font-size:12px;color:var(--green-700)">This park offers a 15% discount to Nomad Pro subscribers. <a href="pages/nomad-pro.html" style="font-weight:600;text-decoration:underline">Upgrade for $9/month →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nearby parks -->
+  <div class="park-section">
+    <h3>Nearby parks you might like</h3>
+    <div class="nearby-grid" id="nearbyParks"></div>
+  </div>
+</div>
+
+<!-- Contact modal -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Contact the park</div><button class="modal-close" data-modal-close="contactModal">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Your name</label><input type="text" placeholder="Jane Smith"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Message</label><textarea rows="4" placeholder="Ask about site availability, rig size fit, long-stay rates, or any other questions…"></textarea></div>
+      <button class="btn btn-primary w-full" onclick="showToast('Message sent! Park will reply within 24 hours.','success');closeModal('contactModal')">Send message</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" onclick="showToast('Welcome! 🏕','success');closeModal('signupModal')">Create account</button></div></div></div>
+
+<footer class="footer" style="margin-top:40px">
+  <div class="container"><div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot</div><a href="search.html" style="color:rgba(255,255,255,0.4);font-size:13px">← Back to search</a></div></div>
+</footer>
+
+<script src="js/app.js"></script>
+<script>
+// Load park from URL param
+const params = new URLSearchParams(location.search);
+const parkId = parseInt(params.get('id')) || 1;
+const park = mockParks.find(p => p.id === parkId) || mockParks[0];
+
+// Set hero
+document.getElementById('heroState').textContent = `${park.state} · ${park.city}`;
+document.getElementById('heroName').textContent = park.name;
+document.getElementById('bcName').textContent = park.name;
+document.title = `${park.name} — RVSpot`;
+document.getElementById('heroRating').textContent = `${park.rating} · ${park.reviews} reviews`;
+document.getElementById('heroStars').textContent = '★'.repeat(Math.round(park.rating));
+document.getElementById('heroEmoji').textContent = ['🏕','⛺','🌲','🏔','🌵'][parkId % 5];
+document.getElementById('pkNightly').textContent = `$${park.price}`;
+document.getElementById('pkMonthly').textContent = `$${park.monthly}`;
+document.getElementById('bookPrice').textContent = `$${park.price}`;
+document.getElementById('bookMonthly').textContent = park.longstay ? `or $${park.monthly}/month for long stays` : 'Nightly and weekly stays available';
+
+// Tags
+const tags = document.getElementById('parkTags');
+if(park.wifi) tags.innerHTML += '<span class="tag wifi">📶 High-speed Wi-Fi</span>';
+if(park.longstay) tags.innerHTML += '<span class="tag longstay">🏠 Long-stay friendly</span>';
+if(park.pets) tags.innerHTML += '<span class="tag pets">🐾 Pets welcome</span>';
+if(park.ev) tags.innerHTML += '<span class="tag ev">⚡ EV charging</span>';
+tags.innerHTML += `<span class="tag">${park.type}</span>`;
+
+// Description
+document.getElementById('parkDesc').textContent = `${park.name} in ${park.city}, ${park.state} offers a premium RV experience with top-rated facilities and a welcoming community. ${park.wifi ? 'High-speed Wi-Fi is available throughout the park.' : ''} ${park.longstay ? 'Long-term and monthly stay options available.' : ''}`;
+
+// Booking logic
+function updateBooking() {
+  const stayType = document.getElementById('stayType').value;
+  let nights = 3;
+  let pricePerUnit = park.price;
+  let label = `$${park.price} × 3 nights`;
+  if(stayType === 'weekly') { nights = 7; pricePerUnit = park.price * 6.5; label = `$${park.price} × 7 nights (weekly rate)`; }
+  if(stayType === 'monthly') { pricePerUnit = park.monthly; label = `Monthly rate`; nights = 1; }
+  const subtotal = pricePerUnit * (stayType === 'monthly' ? 1 : nights);
+  const fee = Math.round(subtotal * 0.08);
+  const tax = Math.round(subtotal * 0.12);
+  document.getElementById('nightsLabel').textContent = label;
+  document.getElementById('nightsTotal').textContent = `$${subtotal.toFixed(0)}`;
+  document.getElementById('bookingTotal').textContent = `$${(subtotal + fee + tax).toFixed(0)}`;
+}
+
+function initiateBooking() {
+  openModal('loginModal');
+  showToast('Sign in to complete your booking →', 'success');
+}
+
+function submitReview() {
+  showToast('Review submitted! It will appear after moderation (within 24h).', 'success');
+}
+
+let selectedRating = 0;
+function setRating(n) {
+  selectedRating = n;
+  document.querySelectorAll('.star-rating-input .star').forEach((s,i) => {
+    s.style.color = i < n ? 'var(--amber-500)' : 'var(--slate-200)';
+  });
+}
+
+// Nearby parks
+const nearby = mockParks.filter(p => p.id !== park.id).slice(0, 3);
+const nearbyGrid = document.getElementById('nearbyParks');
+nearbyGrid.innerHTML = nearby.map((p,i) => `
+  <a href="park.html?id=${p.id}" class="card park-card" style="display:block;text-decoration:none;color:inherit">
+    <div style="height:150px;background:${getParkColor(i+2)}22;display:flex;align-items:center;justify-content:center;font-size:40px">🏕</div>
+    <div class="park-card-body">
+      <div class="park-card-state">${p.state}</div>
+      <div class="park-card-name" style="font-size:15px">${p.name}</div>
+      <div class="park-card-rating"><span class="stars" style="font-size:12px">${'★'.repeat(Math.round(p.rating))}</span><span class="rating-count"> ${p.rating}</span></div>
+      <div class="park-card-price"><span class="price-amount" style="font-size:16px">$${p.price}</span><span class="price-label">/night</span></div>
+    </div>
+  </a>`).join('');
+
+// Set default dates
+const today = new Date();
+const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+const dayAfter = new Date(today); dayAfter.setDate(today.getDate() + 4);
+document.getElementById('checkIn').value = tomorrow.toISOString().split('T')[0];
+document.getElementById('checkOut').value = dayAfter.toISOString().split('T')[0];
+updateBooking();
+</script>
+</body>
+</html>

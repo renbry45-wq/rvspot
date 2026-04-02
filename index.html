@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RVSpot — Find Your Perfect RV Park</title>
+  <meta name="description" content="Search 16,000+ RV parks across the US. Filter by Wi-Fi, long-stay rates, EV chargers. Book directly. Read verified reviews from real RV owners.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .hero { background:var(--green-900); padding:80px 0 100px; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 65% 40%, rgba(42,143,94,0.2) 0%, transparent 65%); pointer-events:none; }
+    .hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; }
+    .hero-eyebrow { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:5px 14px; font-size:12px; font-weight:600; color:var(--green-400); letter-spacing:.06em; text-transform:uppercase; margin-bottom:20px; }
+    .hero-title { font-size:clamp(2.2rem,4.5vw,3.6rem); font-weight:700; line-height:1.1; color:var(--white); margin-bottom:20px; }
+    .hero-title .accent { color:var(--amber-300); }
+    .hero-desc { font-size:17px; color:rgba(255,255,255,0.65); line-height:1.75; margin-bottom:32px; }
+    .hero-actions { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:40px; }
+    .hero-stats { display:flex; gap:32px; flex-wrap:wrap; padding-top:28px; border-top:1px solid rgba(255,255,255,0.1); }
+    .hero-stat-num { font-family:var(--font-display); font-size:1.7rem; font-weight:700; color:var(--white); display:block; }
+    .hero-stat-label { font-size:12px; color:rgba(255,255,255,0.4); }
+    .hero-visual { display:flex; flex-direction:column; gap:12px; }
+    .hero-card { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:var(--radius-lg); padding:16px 20px; display:flex; align-items:center; gap:14px; }
+    .hero-card:nth-child(2),.hero-card:nth-child(4) { margin-left:28px; }
+    .hero-card-icon { width:44px; height:44px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .hero-card-title { font-size:14px; font-weight:600; color:var(--white); }
+    .hero-card-sub { font-size:12px; color:rgba(255,255,255,0.45); margin-top:2px; }
+    .search-band { background:var(--green-900); padding:0 24px 56px; }
+    .search-container { max-width:860px; margin:0 auto; }
+    .search-label { text-align:center; font-size:12px; font-weight:600; color:rgba(255,255,255,0.4); letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; }
+    .feature-card { background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--cream-300); padding:28px; transition:all var(--transition); }
+    .feature-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+    .feature-icon { width:52px; height:52px; border-radius:var(--radius-md); background:var(--green-50); display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:16px; }
+    .feature-card h3 { font-size:17px; margin-bottom:8px; }
+    .feature-card p { font-size:14px; color:var(--slate-500); line-height:1.7; }
+    .how-step { text-align:center; }
+    .how-num { width:52px; height:52px; border-radius:50%; background:var(--green-800); color:var(--white); font-family:var(--font-display); font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+    .how-step h3 { font-size:16px; margin-bottom:8px; }
+    .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px; max-width:640px; margin:0 auto; }
+    .pricing-card { background:var(--white); border-radius:var(--radius-xl); border:2px solid var(--cream-300); padding:32px; }
+    .pricing-card.featured { border-color:var(--green-800); position:relative; }
+    .pricing-badge { position:absolute; top:-14px; left:50%; transform:translateX(-50%); background:var(--green-800); color:var(--white); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 16px; border-radius:20px; white-space:nowrap; }
+    .pricing-audience { font-size:12px; font-weight:600; color:var(--green-600); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+    .pricing-name { font-family:var(--font-display); font-size:24px; font-weight:700; }
+    .pricing-price { font-size:36px; font-weight:800; color:var(--slate-900); margin:14px 0 4px; }
+    .pricing-price span { font-size:16px; font-weight:400; color:var(--slate-400); }
+    .pricing-desc { font-size:14px; color:var(--slate-500); margin-bottom:20px; }
+    .pricing-features { list-style:none; margin-bottom:24px; }
+    .pricing-features li { display:flex; align-items:flex-start; gap:10px; font-size:14px; padding:7px 0; border-bottom:1px solid var(--cream-300); color:var(--slate-600); }
+    .pricing-features li:last-child { border-bottom:none; }
+    .check { color:var(--green-600); flex-shrink:0; }
+    .testimonial-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--cream-300); padding:28px; }
+    .testimonial-quote { font-size:15px; line-height:1.75; color:var(--slate-600); margin-bottom:20px; font-style:italic; }
+    .testimonial-author { display:flex; align-items:center; gap:12px; }
+    .t-avatar { width:44px; height:44px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; color:var(--green-700); flex-shrink:0; }
+    .t-name { font-weight:600; font-size:14px; color:var(--slate-900); }
+    .t-role { font-size:12px; color:var(--slate-400); margin-top:1px; }
+    .cta-band { background:var(--green-800); padding:80px 0; text-align:center; }
+    .cta-band h2 { color:var(--white); margin-bottom:12px; }
+    .cta-band p { color:rgba(255,255,255,0.7); font-size:17px; margin-bottom:32px; max-width:520px; margin-left:auto; margin-right:auto; }
+    @media(max-width:768px){ .hero-grid{grid-template-columns:1fr;} .hero-visual{display:none;} }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="fade-in">
+        <div class="hero-eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          16,400+ Parks Across America
+        </div>
+        <h1 class="hero-title">Find your perfect <span class="accent">RV spot</span> and make it home</h1>
+        <p class="hero-desc">Search, compare, and book RV parks with real Wi-Fi ratings, verified long-stay rates, and honest reviews from actual RV owners.</p>
+        <div class="hero-actions">
+          <a href="search.html" class="btn btn-amber btn-lg">Search Parks →</a>
+          <a href="pages/for-operators.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)">List Your Park</a>
+        </div>
+        <div class="hero-stats">
+          <div><span class="hero-stat-num">16,419</span><span class="hero-stat-label">RV parks listed</span></div>
+          <div><span class="hero-stat-num">480K</span><span class="hero-stat-label">Full-time residents</span></div>
+          <div><span class="hero-stat-num">823K</span><span class="hero-stat-label">Monthly searches</span></div>
+        </div>
+      </div>
+      <div class="hero-visual fade-in-delay-1">
+        <div class="hero-card">
+          <div class="hero-card-icon" style="background:rgba(77,186,132,0.15)">📶</div>
+          <div style="flex:1"><div class="hero-card-title">Pineview Lake Resort — Austin, TX</div><div class="hero-card-sub">Wi-Fi: 94 Mbps avg · ★★★★★ 4.9</div></div>
+          <span class="badge badge-green">Available</span>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-icon" style="background:rgba(232,148,10,0.15)">🏠</div>
+          <div style="flex:1"><div class="hero-card-title">Desert Rose RV Park — Scottsdale, AZ</div><div class="hero-card-sub">Long stay: $580/mo · Pets OK · EV charging</div></div>
+          <span class="badge badge-amber">Popular</span>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-icon" style="background:rgba(21,101,192,0.15)">⚡</div>
+          <div style="flex:1"><div class="hero-card-title">Sunbelt RV Community — Fort Myers, FL</div><div class="hero-card-sub">50-amp · EV · Pool · Full hookups</div></div>
+          <span class="badge badge-verified">Verified Pro</span>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-icon" style="background:rgba(194,24,91,0.15)">🗺</div>
+          <div style="flex:1"><div class="hero-card-title">Route: Austin → Asheville → Fort Myers</div><div class="hero-card-sub">3 parks · 1,840 mi · 4 EV stops mapped</div></div>
+          <span class="badge badge-pro">Pro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="search-band">
+  <div class="search-container">
+    <div class="search-label">Search by location, park name, or amenity</div>
+    <form class="search-box" action="search.html" method="get">
+      <svg style="margin-left:12px;color:var(--slate-400);flex-shrink:0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="search-field" type="text" name="q" placeholder="City, state, or park name…" style="border:none;background:transparent;outline:none;">
+      <div class="search-divider"></div>
+      <label class="search-filter"><input type="checkbox" name="wifi" style="width:auto;border:none;margin:0;accent-color:var(--green-800)"> Wi-Fi</label>
+      <div class="search-divider"></div>
+      <label class="search-filter"><input type="checkbox" name="longstay" style="width:auto;border:none;margin:0;accent-color:var(--green-800)"> Long stay</label>
+      <div class="search-divider"></div>
+      <label class="search-filter"><input type="checkbox" name="ev" style="width:auto;border:none;margin:0;accent-color:var(--green-800)"> EV</label>
+      <button type="submit" class="search-submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Why RVSpot</span>
+      <h2>Built for every RV traveler</h2>
+      <p>Whether you're a weekend warrior, a full-timer, or looking for your next long-stay home — RVSpot has you covered.</p>
+    </div>
+    <div class="grid-3">
+      <div class="feature-card"><div class="feature-icon">📶</div><h3>Real Wi-Fi ratings</h3><p>Speed tests from verified travelers — not self-reported by parks. Know actual download speeds before you book.</p></div>
+      <div class="feature-card"><div class="feature-icon">🏠</div><h3>Long-stay finder</h3><p>Filter for monthly rates, annual leases, and 55+ communities. Built for full-timers, not just overnighters.</p></div>
+      <div class="feature-card"><div class="feature-icon">⭐</div><h3>Verified stay reviews</h3><p>Reviews tagged "Verified Stay" are from users who booked through RVSpot. Real reviews, no park influence.</p></div>
+      <div class="feature-card"><div class="feature-icon">🗺</div><h3>Route planner</h3><p>Plan multi-stop trips with dump stations, EV chargers, and service centers along your exact route.</p></div>
+      <div class="feature-card"><div class="feature-icon">⚡</div><h3>EV & hookup filter</h3><p>Filter for 30-amp, 50-amp, full hookups, and EV charging — critical details for modern RV setups.</p></div>
+      <div class="feature-card"><div class="feature-icon">🚐</div><h3>RV model reviews</h3><p>Owner reviews of RV makes and models — plus which parks fit your rig size. Two platforms in one.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--cream-200)">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Featured parks</span>
+      <h2>Top-rated parks this month</h2>
+      <p>Verified reviews, real availability, direct booking.</p>
+    </div>
+    <div class="grid-3" id="featuredParks"></div>
+    <div class="text-center mt-24">
+      <a href="search.html" class="btn btn-primary btn-lg">Browse all 16,400+ parks →</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">How it works</span><h2>Search, compare, book in minutes</h2></div>
+    <div class="grid-4">
+      <div class="how-step"><div class="how-num">1</div><h3>Search & filter</h3><p>Filter by Wi-Fi, price, rig size, pets, hookups, and 20+ more options.</p></div>
+      <div class="how-step"><div class="how-num">2</div><h3>Compare parks</h3><p>Real Wi-Fi speeds, verified reviews, nightly vs. monthly rates side by side.</p></div>
+      <div class="how-step"><div class="how-num">3</div><h3>Book instantly</h3><p>Direct booking with real-time availability. No phone calls needed.</p></div>
+      <div class="how-step"><div class="how-num">4</div><h3>Review & share</h3><p>Leave a verified review and help the community find great spots.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">Pricing</span><h2>Free to start, powerful when you upgrade</h2></div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-audience">For travelers</div>
+        <div class="pricing-name">Explorer</div>
+        <div class="pricing-price">Free</div>
+        <div class="pricing-desc">For occasional travelers and weekenders.</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> Search all 16,400+ parks</li>
+          <li><span class="check">✓</span> Read community reviews</li>
+          <li><span class="check">✓</span> Basic filters & map</li>
+          <li><span class="check">✓</span> Direct booking</li>
+        </ul>
+        <button class="btn btn-secondary w-full" onclick="openModal('signupModal')">Get started free</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Best value</div>
+        <div class="pricing-audience">For travelers</div>
+        <div class="pricing-name">Nomad Pro</div>
+        <div class="pricing-price">$9 <span>/month</span></div>
+        <div class="pricing-desc">For full-timers and serious RV travelers.</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> Everything in Explorer</li>
+          <li><span class="check">✓</span> Offline maps & GPS routing</li>
+          <li><span class="check">✓</span> Real Wi-Fi speed ratings</li>
+          <li><span class="check">✓</span> Park discounts (avg 15% off)</li>
+          <li><span class="check">✓</span> Caravan organizer</li>
+          <li><span class="check">✓</span> Remote job board access</li>
+        </ul>
+        <button class="btn btn-primary w-full" onclick="openModal('signupModal')">Start 30-day free trial</button>
+      </div>
+    </div>
+    <p class="text-center mt-24 text-muted text-sm">Park operators: <a href="pages/for-operators.html" style="color:var(--green-700)">see operator pricing →</a></p>
+  </div>
+</section>
+
+<section class="section" style="background:var(--white)">
+  <div class="container">
+    <div class="section-header"><span class="section-eyebrow">Community reviews</span><h2>What travelers and operators say</h2></div>
+    <div class="grid-3">
+      <div class="testimonial-card"><div class="testimonial-quote">The Wi-Fi rating filter saved me from three terrible spots. As someone who works remotely from my Airstream, knowing actual speeds before booking changes everything.</div><div class="testimonial-author"><div class="t-avatar">MR</div><div><div class="t-name">Marcus R.</div><div class="t-role">Software developer · Full-time RVer</div></div></div></div>
+      <div class="testimonial-card"><div class="testimonial-quote">We upgraded to Pro Park and saw 40% more long-term bookings in Q1. The analytics showed exactly which amenities guests actually cared about. Worth every cent.</div><div class="testimonial-author"><div class="t-avatar">SC</div><div><div class="t-name">Sandra C.</div><div class="t-role">Owner, Pineview Lake Resort · Texas</div></div></div></div>
+      <div class="testimonial-card"><div class="testimonial-quote">The route planner found EV charging for our entire 2,400-mile trip. We organized a caravan of 6 rigs through the community feature. No other platform does this.</div><div class="testimonial-author"><div class="t-avatar">LT</div><div><div class="t-name">Lisa & Tom H.</div><div class="t-role">Retired couple · Full-time nomads</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <h2>Ready to find your perfect spot?</h2>
+    <p>Join thousands of RV travelers and park operators already on RVSpot.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-amber btn-lg" onclick="openModal('signupModal')">Join free as a traveler</button>
+      <a href="pages/for-operators.html" class="btn btn-lg" style="background:rgba(255,255,255,0.12);color:var(--white);border:1px solid rgba(255,255,255,0.25)">List your park</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">RVSpot</div>
+        <p>The complete platform for RV travelers and park operators. Search, book, review, and connect across America.</p>
+        <p style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.25)">Operated by Booking Bridge LLC dba RVSpot</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="search.html">Find Parks</a></li><li><a href="rv-reviews.html">RV Reviews</a></li><li><a href="routes.html">Route Planner</a></li><li><a href="pages/nomad-pro.html">Nomad Pro</a></li></ul></div>
+      <div class="footer-col"><h4>For Operators</h4><ul><li><a href="pages/for-operators.html">List Your Park</a></li><li><a href="pages/operator-dashboard.html">Pro Dashboard</a></li><li><a href="#pricing">Pricing</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="pages/about.html">About</a></li><li><a href="pages/contact.html">Contact</a></li><li><a href="pages/tos.html">Terms of Service</a></li><li><a href="pages/privacy.html">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved · RVSpot.net</div>
+    </div>
+  </div>
+</footer>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Email address</label><input type="email" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary w-full" style="margin-top:8px">Sign in</button>
+      <div class="divider-text">or</div>
+      <button class="btn btn-secondary w-full">Continue with Google</button>
+      <p class="text-center mt-16 text-sm text-muted">No account? <a href="#" style="color:var(--green-700)" onclick="closeModal('loginModal');openModal('signupModal')">Join free</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div class="modal-overlay" id="signupModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div>
+        <div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email address</label><input type="email" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div>
+      <div class="form-group"><label class="form-label">I am a…</label><select><option>RV traveler / owner</option><option>Full-time RV resident</option><option>RV park operator</option><option>Just exploring</option></select></div>
+      <button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot! 🏕','success');closeModal('signupModal')">Create free account</button>
+      <div class="divider-text">or</div>
+      <button class="btn btn-secondary w-full">Continue with Google</button>
+      <p class="text-center mt-8" style="font-size:11px;color:var(--slate-400)">By joining you agree to our <a href="pages/tos.html" style="color:var(--green-700)">Terms of Service</a> and <a href="pages/privacy.html" style="color:var(--green-700)">Privacy Policy</a>.</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+const grid = document.getElementById('featuredParks');
+if(grid){
+  grid.innerHTML = mockParks.slice(0,3).map((p,i)=>`
+    <a href="park.html?id=${p.id}" class="card park-card" style="display:block;text-decoration:none;color:inherit">
+      <div style="height:200px;background:${getParkColor(i)}22;display:flex;align-items:center;justify-content:center;font-size:52px">🏕</div>
+      <div class="park-card-body">
+        <div class="park-card-state">${p.state} · ${p.city}</div>
+        <div class="park-card-name">${p.name}</div>
+        <div class="park-card-rating"><span class="stars">${'★'.repeat(Math.round(p.rating))}</span><span class="rating-count ml-4">${p.rating} (${p.reviews} reviews)</span></div>
+        <div class="park-card-tags">
+          ${p.wifi?'<span class="tag wifi">📶 Wi-Fi</span>':''}
+          ${p.longstay?'<span class="tag longstay">🏠 Long stay</span>':''}
+          ${p.pets?'<span class="tag pets">🐾 Pets</span>':''}
+          ${p.ev?'<span class="tag ev">⚡ EV</span>':''}
+        </div>
+        <div class="park-card-price"><span class="price-amount">$${p.price}</span><span class="price-label">/night · $${p.monthly}/mo</span></div>
+      </div>
+    </a>`).join('');
+}
+</script>
+</body>
+</html>
