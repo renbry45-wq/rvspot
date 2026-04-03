@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmed — RVSpot</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .confirm-wrap { max-width:560px; margin:0 auto; padding:60px 24px; text-align:center; }
+    .confirm-icon { width:72px; height:72px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:36px; }
+    .confirm-card { background:var(--white); border-radius:var(--radius-xl); border:1px solid var(--cream-300); padding:28px; text-align:left; margin:28px 0; }
+    .confirm-row { display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px solid var(--cream-300); color:var(--slate-600); }
+    .confirm-row:last-child { border-bottom:none; font-weight:700; color:var(--slate-900); font-size:15px; }
+    .confirm-label { color:var(--slate-500); }
+    .spinner { width:40px; height:40px; border:3px solid var(--cream-300); border-top-color:var(--green-700); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="../search.html">Find Parks</a></li>
+      <li><a href="../routes.html">Route Planner</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="user-dashboard.html" class="btn btn-primary btn-sm">My Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="confirm-wrap">
+
+  <!-- Loading state -->
+  <div id="loadingState">
+    <div class="spinner"></div>
+    <p style="color:var(--slate-500)">Confirming your booking…</p>
+  </div>
+
+  <!-- Success state -->
+  <div id="successState" style="display:none">
+    <div class="confirm-icon">✓</div>
+    <h1 style="font-size:1.8rem;margin-bottom:8px">Booking Confirmed!</h1>
+    <p style="color:var(--slate-500);margin-bottom:4px">A confirmation has been sent to <strong id="confirmEmail"></strong></p>
+    <p style="font-size:13px;color:var(--slate-400)">Confirmation #: <span id="confirmId" style="font-family:monospace"></span></p>
+
+    <div class="confirm-card">
+      <div style="font-weight:700;font-size:16px;margin-bottom:14px" id="confirmParkName">🏕 Park Booking</div>
+      <div class="confirm-row"><span class="confirm-label">Check-in</span><span id="confirmCheckIn"></span></div>
+      <div class="confirm-row"><span class="confirm-label">Check-out</span><span id="confirmCheckOut"></span></div>
+      <div class="confirm-row"><span class="confirm-label">Stay type</span><span id="confirmStayType"></span></div>
+      <div class="confirm-row"><span class="confirm-label">Base amount</span><span id="confirmBase"></span></div>
+      <div class="confirm-row"><span class="confirm-label">Service fee</span><span id="confirmFee"></span></div>
+      <div class="confirm-row"><span class="confirm-label">Taxes</span><span id="confirmTax"></span></div>
+      <div class="confirm-row"><span>Total paid</span><span id="confirmTotal"></span></div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="user-dashboard.html" class="btn btn-primary">View my bookings</a>
+      <a href="../search.html" class="btn btn-secondary">Find more parks</a>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div id="errorState" style="display:none">
+    <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+    <h2>Something went wrong</h2>
+    <p id="errorMsg" style="color:var(--slate-500);margin:12px 0 24px"></p>
+    <a href="../search.html" class="btn btn-primary">Back to search</a>
+  </div>
+
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 20) return cb();
+  setTimeout(() => waitForSb(cb, attempts + 1), 100);
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorState').style.display = 'block';
+}
+
+function showSuccess(booking) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('confirmEmail').textContent   = booking.customer_email || '';
+  document.getElementById('confirmId').textContent      = (booking.payment_intent || '').slice(-12).toUpperCase();
+  document.getElementById('confirmCheckIn').textContent  = booking.check_in || '—';
+  document.getElementById('confirmCheckOut').textContent = booking.check_out || '—';
+  document.getElementById('confirmStayType').textContent = booking.stay_type || '—';
+  document.getElementById('confirmBase').textContent  = `$${parseFloat(booking.base_amount || 0).toFixed(2)}`;
+  document.getElementById('confirmFee').textContent   = `$${parseFloat(booking.service_fee || 0).toFixed(2)}`;
+  document.getElementById('confirmTax').textContent   = `$${parseFloat(booking.tax_amount || 0).toFixed(2)}`;
+  document.getElementById('confirmTotal').textContent = `$${parseFloat(booking.total_amount || 0).toFixed(2)}`;
+  document.getElementById('successState').style.display = 'block';
+}
+
+async function init() {
+  const params    = new URLSearchParams(location.search);
+  const sessionId = params.get('session_id');
+
+  if (!sessionId || !sessionId.startsWith('cs_')) {
+    showError('No booking session found. If you completed a payment, check your email for confirmation.');
+    return;
+  }
+
+  // Fetch booking details from worker
+  let booking;
+  try {
+    const res = await fetch(`/api/get-booking-session?session_id=${sessionId}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (data.booking.payment_status !== 'paid') throw new Error('Payment not completed.');
+    booking = data.booking;
+  } catch (err) {
+    showError(err.message || 'Could not retrieve booking details.');
+    return;
+  }
+
+  // Write booking to Supabase (belt-and-suspenders alongside webhook)
+  waitForSb(async () => {
+    if (!window._sb) return;
+    const { data: { user } } = await window._sb.auth.getUser();
+    if (user && booking.park_id) {
+      await window._sb.from('bookings').upsert({
+        park_id:                  booking.park_id,
+        user_id:                  user.id,
+        check_in:                 booking.check_in,
+        check_out:                booking.check_out,
+        stay_type:                booking.stay_type,
+        base_amount:              parseFloat(booking.base_amount),
+        service_fee:              parseFloat(booking.service_fee),
+        tax_amount:               parseFloat(booking.tax_amount),
+        total_amount:             parseFloat(booking.total_amount),
+        stripe_payment_intent_id: booking.payment_intent,
+        status:                   'confirmed',
+      }, { onConflict: 'stripe_payment_intent_id', ignoreDuplicates: true });
+    }
+  });
+
+  showSuccess(booking);
+}
+
+init();
+</script>
+</body>
+</html>

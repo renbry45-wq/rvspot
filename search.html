@@ -204,7 +204,50 @@
 
 <script src="js/app.js"></script>
 <script>
+let supabaseParks = [];
 let currentParks = [...mockParks];
+
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 20) return cb();
+  setTimeout(() => waitForSb(cb, attempts + 1), 100);
+}
+
+async function loadParks() {
+  if (!window._sb) { renderParks(mockParks); applyFilters(); return; }
+  try {
+    const { data, error } = await window._sb
+      .from('parks')
+      .select('id,name,slug,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,is_verified')
+      .eq('is_active', true)
+      .order('avg_rating', { ascending: false })
+      .limit(50);
+    if (error || !data?.length) throw error;
+    supabaseParks = data.map(p => ({
+      id:       p.id,
+      name:     p.name,
+      state:    p.state,
+      city:     p.city,
+      rating:   p.avg_rating || 0,
+      reviews:  p.review_count || 0,
+      price:    p.price_nightly || 0,
+      monthly:  p.price_monthly || 0,
+      wifi:     p.has_wifi,
+      longstay: p.allows_long_stay,
+      pets:     p.pets_allowed,
+      ev:       p.has_ev_charging,
+      type:     p.type || 'RV Park',
+    }));
+    currentParks = [...supabaseParks];
+    renderParks(supabaseParks);
+    applyFilters();
+  } catch {
+    supabaseParks = [...mockParks];
+    currentParks  = [...mockParks];
+    renderParks(mockParks);
+    applyFilters();
+  }
+}
 
 function renderParks(parks) {
   const list = document.getElementById('parkList');
@@ -244,7 +287,7 @@ function renderParks(parks) {
 }
 
 function applyFilters() {
-  let parks = [...mockParks];
+  let parks = supabaseParks.length ? [...supabaseParks] : [...mockParks];
   const price = parseInt(document.getElementById('priceRange').value);
   parks = parks.filter(p => p.price <= price);
   if(document.getElementById('f-wifi').checked) parks = parks.filter(p => p.wifi);
@@ -277,7 +320,7 @@ function clearFilters() {
   document.querySelector('input[name="rating"]').checked=true;
   document.getElementById('priceRange').value=200;
   document.getElementById('priceDisplay').textContent='Any price';
-  currentParks=[...mockParks];
+  currentParks = supabaseParks.length ? [...supabaseParks] : [...mockParks];
   renderParks(currentParks);
 }
 
@@ -293,8 +336,7 @@ if(params.get('wifi')==='on') document.getElementById('f-wifi').checked=true;
 if(params.get('longstay')==='on') document.getElementById('f-monthly').checked=true;
 if(params.get('ev')==='on') document.getElementById('f-ev').checked=true;
 
-renderParks(mockParks);
-applyFilters();
+waitForSb(loadParks);
 </script>
 </body>
 </html>

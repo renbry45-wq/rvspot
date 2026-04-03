@@ -10,7 +10,7 @@ const ALLOWED_PRICES   = new Set([PRICE_PARK_PRO, PRICE_NOMAD_PRO]);
 
 const CORS = {
   'Access-Control-Allow-Origin':  'https://rvspot.net',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -29,6 +29,14 @@ export default {
 
     if (url.pathname === '/api/stripe-webhook' && request.method === 'POST') {
       return handleWebhook(request, env);
+    }
+
+    if (url.pathname === '/api/create-booking-session' && request.method === 'POST') {
+      return handleBookingCheckout(request, env);
+    }
+
+    if (url.pathname === '/api/get-booking-session' && request.method === 'GET') {
+      return handleGetBookingSession(request, env);
     }
 
     // Serve static assets for everything else
@@ -108,6 +116,26 @@ async function handleWebhook(request, env) {
       case 'checkout.session.completed': {
         const session  = event.data.object;
         const userId   = session.metadata?.user_id;
+        const parkId   = session.metadata?.park_id;
+
+        // Booking payment (one-time)
+        if (parkId && userId) {
+          await sbPost(env, '/rest/v1/bookings', {
+            park_id:                  parkId,
+            user_id:                  userId,
+            check_in:                 session.metadata.check_in,
+            check_out:                session.metadata.check_out,
+            stay_type:                session.metadata.stay_type,
+            base_amount:              parseFloat(session.metadata.base_amount),
+            service_fee:              parseFloat(session.metadata.service_fee),
+            tax_amount:               parseFloat(session.metadata.tax_amount),
+            total_amount:             parseFloat(session.metadata.total_amount),
+            stripe_payment_intent_id: session.payment_intent,
+            status:                   'confirmed',
+          }, 'resolution=merge-duplicates');
+          break;
+        }
+
         const planType = session.metadata?.plan_type;
         const subId    = session.subscription;
         if (!userId || !subId) break;
@@ -202,6 +230,99 @@ async function handleWebhook(request, env) {
     console.error('Webhook error:', err);
     return new Response('Internal error', { status: 500 });
   }
+}
+
+/* ─── Booking checkout session ──────────────────────────────── */
+
+async function handleBookingCheckout(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  const { parkId, parkName, userId, userEmail, checkIn, checkOut,
+          stayType, baseAmount, serviceFee, taxAmount, totalAmount } = body;
+
+  if (!parkId || !userId || !userEmail || !totalAmount) {
+    return json({ error: 'Missing required parameters' }, 400);
+  }
+
+  const amountCents = Math.round(parseFloat(totalAmount) * 100);
+
+  const params = new URLSearchParams({
+    mode:                                              'payment',
+    'payment_method_types[]':                         'card',
+    'line_items[0][price_data][currency]':            'usd',
+    'line_items[0][price_data][unit_amount]':         String(amountCents),
+    'line_items[0][price_data][product_data][name]':  `${parkName} — ${stayType} stay`,
+    'line_items[0][price_data][product_data][description]': `${checkIn} to ${checkOut}`,
+    'line_items[0][quantity]':                        '1',
+    success_url: `https://rvspot.net/pages/booking-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url:  `https://rvspot.net/park.html?id=${parkId}`,
+    customer_email: userEmail,
+    'metadata[user_id]':      userId,
+    'metadata[park_id]':      parkId,
+    'metadata[check_in]':     checkIn,
+    'metadata[check_out]':    checkOut,
+    'metadata[stay_type]':    stayType,
+    'metadata[base_amount]':  String(baseAmount),
+    'metadata[service_fee]':  String(serviceFee),
+    'metadata[tax_amount]':   String(taxAmount),
+    'metadata[total_amount]': String(totalAmount),
+  });
+
+  let stripeRes, session;
+  try {
+    stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method:  'POST',
+      headers: {
+        Authorization:  `Bearer ${env.STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params,
+    });
+    session = await stripeRes.json();
+  } catch {
+    return json({ error: 'Failed to reach Stripe' }, 502);
+  }
+
+  if (!stripeRes.ok) {
+    return json({ error: session.error?.message || 'Stripe error' }, 400);
+  }
+
+  return json({ url: session.url, sessionId: session.id }, 200);
+}
+
+/* ─── Get booking session (for confirmation page) ───────────── */
+
+async function handleGetBookingSession(request, env) {
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get('session_id');
+  if (!sessionId || !sessionId.startsWith('cs_')) {
+    return json({ error: 'Invalid session ID' }, 400);
+  }
+
+  const stripeRes = await fetch(
+    `https://api.stripe.com/v1/checkout/sessions/${sessionId}`,
+    { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } }
+  );
+  const session = await stripeRes.json();
+  if (!stripeRes.ok) return json({ error: 'Session not found' }, 404);
+
+  return json({
+    booking: {
+      park_id:        session.metadata?.park_id,
+      check_in:       session.metadata?.check_in,
+      check_out:      session.metadata?.check_out,
+      stay_type:      session.metadata?.stay_type,
+      base_amount:    session.metadata?.base_amount,
+      service_fee:    session.metadata?.service_fee,
+      tax_amount:     session.metadata?.tax_amount,
+      total_amount:   session.metadata?.total_amount,
+      payment_intent: session.payment_intent,
+      customer_email: session.customer_details?.email,
+      payment_status: session.payment_status,
+    }
+  }, 200);
 }
 
 /* ─── Stripe helpers ────────────────────────────────────────── */

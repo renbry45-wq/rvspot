@@ -380,44 +380,95 @@
 
 <script src="js/app.js"></script>
 <script>
-// Load park from URL param
 const params = new URLSearchParams(location.search);
-const parkId = parseInt(params.get('id')) || 1;
-const park = mockParks.find(p => p.id === parkId) || mockParks[0];
+const rawParkId = params.get('id');
+let park = null;
 
-// Set hero
-document.getElementById('heroState').textContent = `${park.state} · ${park.city}`;
-document.getElementById('heroName').textContent = park.name;
-document.getElementById('bcName').textContent = park.name;
-document.title = `${park.name} — RVSpot`;
-document.getElementById('heroRating').textContent = `${park.rating} · ${park.reviews} reviews`;
-document.getElementById('heroStars').textContent = '★'.repeat(Math.round(park.rating));
-document.getElementById('heroEmoji').textContent = ['🏕','⛺','🌲','🏔','🌵'][parkId % 5];
-document.getElementById('pkNightly').textContent = `$${park.price}`;
-document.getElementById('pkMonthly').textContent = `$${park.monthly}`;
-document.getElementById('bookPrice').textContent = `$${park.price}`;
-document.getElementById('bookMonthly').textContent = park.longstay ? `or $${park.monthly}/month for long stays` : 'Nightly and weekly stays available';
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 20) return cb();
+  setTimeout(() => waitForSb(cb, attempts + 1), 100);
+}
 
-// Tags
-const tags = document.getElementById('parkTags');
-if(park.wifi) tags.innerHTML += '<span class="tag wifi">📶 High-speed Wi-Fi</span>';
-if(park.longstay) tags.innerHTML += '<span class="tag longstay">🏠 Long-stay friendly</span>';
-if(park.pets) tags.innerHTML += '<span class="tag pets">🐾 Pets welcome</span>';
-if(park.ev) tags.innerHTML += '<span class="tag ev">⚡ EV charging</span>';
-tags.innerHTML += `<span class="tag">${park.type}</span>`;
+function populatePark(p) {
+  park = p;
+  document.getElementById('heroState').textContent = `${p.state} · ${p.city}`;
+  document.getElementById('heroName').textContent = p.name;
+  document.getElementById('bcName').textContent = p.name;
+  document.title = `${p.name} — RVSpot`;
+  document.getElementById('heroRating').textContent = `${p.rating} · ${p.reviews} reviews`;
+  document.getElementById('heroStars').textContent = '★'.repeat(Math.round(p.rating));
+  document.getElementById('heroEmoji').textContent = ['🏕','⛺','🌲','🏔','🌵'][String(p.id).length % 5];
+  document.getElementById('pkNightly').textContent = `$${p.price}`;
+  document.getElementById('pkMonthly').textContent = `$${p.monthly}`;
+  document.getElementById('bookPrice').textContent = `$${p.price}`;
+  document.getElementById('bookMonthly').textContent = p.longstay ? `or $${p.monthly}/month for long stays` : 'Nightly and weekly stays available';
+  const tags = document.getElementById('parkTags');
+  if(p.wifi) tags.innerHTML += '<span class="tag wifi">📶 High-speed Wi-Fi</span>';
+  if(p.longstay) tags.innerHTML += '<span class="tag longstay">🏠 Long-stay friendly</span>';
+  if(p.pets) tags.innerHTML += '<span class="tag pets">🐾 Pets welcome</span>';
+  if(p.ev) tags.innerHTML += '<span class="tag ev">⚡ EV charging</span>';
+  tags.innerHTML += `<span class="tag">${p.type}</span>`;
+  document.getElementById('parkDesc').textContent = `${p.name} in ${p.city}, ${p.state} offers a premium RV experience with top-rated facilities and a welcoming community. ${p.wifi ? 'High-speed Wi-Fi is available throughout the park.' : ''} ${p.longstay ? 'Long-term and monthly stay options available.' : ''}`;
+  updateBooking();
+  renderNearby();
+}
 
-// Description
-document.getElementById('parkDesc').textContent = `${park.name} in ${park.city}, ${park.state} offers a premium RV experience with top-rated facilities and a welcoming community. ${park.wifi ? 'High-speed Wi-Fi is available throughout the park.' : ''} ${park.longstay ? 'Long-term and monthly stay options available.' : ''}`;
+async function loadPark() {
+  // Try Supabase first (UUID ids contain '-', legacy mock ids are integers)
+  if (window._sb && rawParkId && rawParkId.includes('-')) {
+    try {
+      const { data, error } = await window._sb
+        .from('parks')
+        .select('id,name,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count')
+        .eq('id', rawParkId)
+        .single();
+      if (!error && data) {
+        populatePark({
+          id: data.id, name: data.name, city: data.city, state: data.state,
+          price: data.price_nightly || 0, monthly: data.price_monthly || 0,
+          wifi: data.has_wifi, longstay: data.allows_long_stay,
+          pets: data.pets_allowed, ev: data.has_ev_charging,
+          type: data.type || 'RV Park', rating: data.avg_rating || 0,
+          reviews: data.review_count || 0,
+        });
+        return;
+      }
+    } catch {}
+  }
+  // Fallback to mock data
+  const mockId = parseInt(rawParkId) || 1;
+  populatePark(mockParks.find(p => p.id === mockId) || mockParks[0]);
+}
 
-// Booking logic
+function renderNearby() {
+  const nearby = mockParks.filter(p => p.id !== park?.id).slice(0, 3);
+  document.getElementById('nearbyParks').innerHTML = nearby.map((p,i) => `
+    <a href="park.html?id=${p.id}" class="card park-card" style="display:block;text-decoration:none;color:inherit">
+      <div style="height:150px;background:${getParkColor(i+2)}22;display:flex;align-items:center;justify-content:center;font-size:40px">🏕</div>
+      <div class="park-card-body">
+        <div class="park-card-state">${p.state}</div>
+        <div class="park-card-name" style="font-size:15px">${p.name}</div>
+        <div class="park-card-rating"><span class="stars" style="font-size:12px">${'★'.repeat(Math.round(p.rating))}</span><span class="rating-count"> ${p.rating}</span></div>
+        <div class="park-card-price"><span class="price-amount" style="font-size:16px">$${p.price}</span><span class="price-label">/night</span></div>
+      </div>
+    </a>`).join('');
+}
+
 function updateBooking() {
+  if (!park) return;
   const stayType = document.getElementById('stayType').value;
-  let nights = 3;
-  let pricePerUnit = park.price;
-  let label = `$${park.price} × 3 nights`;
-  if(stayType === 'weekly') { nights = 7; pricePerUnit = park.price * 6.5; label = `$${park.price} × 7 nights (weekly rate)`; }
-  if(stayType === 'monthly') { pricePerUnit = park.monthly; label = `Monthly rate`; nights = 1; }
-  const subtotal = pricePerUnit * (stayType === 'monthly' ? 1 : nights);
+  let subtotal, label;
+  if (stayType === 'monthly') {
+    subtotal = park.monthly; label = 'Monthly rate';
+  } else if (stayType === 'weekly') {
+    subtotal = park.price * 6.5; label = `$${park.price} × 7 nights (weekly rate)`;
+  } else {
+    const ci = new Date(document.getElementById('checkIn').value);
+    const co = new Date(document.getElementById('checkOut').value);
+    const nights = isNaN(ci) || isNaN(co) ? 3 : Math.max(1, Math.round((co - ci) / 86400000));
+    subtotal = park.price * nights; label = `$${park.price} × ${nights} night${nights !== 1 ? 's' : ''}`;
+  }
   const fee = Math.round(subtotal * 0.08);
   const tax = Math.round(subtotal * 0.12);
   document.getElementById('nightsLabel').textContent = label;
@@ -425,9 +476,52 @@ function updateBooking() {
   document.getElementById('bookingTotal').textContent = `$${(subtotal + fee + tax).toFixed(0)}`;
 }
 
-function initiateBooking() {
-  openModal('loginModal');
-  showToast('Sign in to complete your booking →', 'success');
+async function initiateBooking() {
+  const sb = window._sb;
+  if (!sb) { showToast('Please wait a moment and try again.', 'warning'); return; }
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) {
+    sessionStorage.setItem('rvspot_pending_booking', JSON.stringify({
+      parkId: park.id,
+      checkIn: document.getElementById('checkIn').value,
+      checkOut: document.getElementById('checkOut').value,
+      stayType: document.getElementById('stayType').value,
+    }));
+    openModal('loginModal');
+    showToast('Sign in to complete your booking', 'warning');
+    return;
+  }
+  await startBookingCheckout(user);
+}
+
+async function startBookingCheckout(user) {
+  const btn = document.querySelector('.booking-card .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to payment…'; }
+  const stayType  = document.getElementById('stayType').value;
+  const checkIn   = document.getElementById('checkIn').value;
+  const checkOut  = document.getElementById('checkOut').value;
+  const subtotal  = parseFloat(document.getElementById('nightsTotal').textContent.replace('$','')) || 0;
+  const total     = parseFloat(document.getElementById('bookingTotal').textContent.replace('$','')) || 0;
+  const serviceFee = Math.round(subtotal * 0.08 * 100) / 100;
+  const taxAmount  = Math.round(subtotal * 0.12 * 100) / 100;
+  try {
+    const res = await fetch('/api/create-booking-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parkId: park.id, parkName: park.name,
+        userId: user.id, userEmail: user.email,
+        checkIn, checkOut, stayType,
+        baseAmount: subtotal, serviceFee, taxAmount, totalAmount: total,
+      }),
+    });
+    const { url, error } = await res.json();
+    if (error) throw new Error(error);
+    window.location.href = url;
+  } catch (err) {
+    showToast(err.message || 'Payment error. Please try again.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reserve now'; }
+  }
 }
 
 function submitReview() {
@@ -442,27 +536,28 @@ function setRating(n) {
   });
 }
 
-// Nearby parks
-const nearby = mockParks.filter(p => p.id !== park.id).slice(0, 3);
-const nearbyGrid = document.getElementById('nearbyParks');
-nearbyGrid.innerHTML = nearby.map((p,i) => `
-  <a href="park.html?id=${p.id}" class="card park-card" style="display:block;text-decoration:none;color:inherit">
-    <div style="height:150px;background:${getParkColor(i+2)}22;display:flex;align-items:center;justify-content:center;font-size:40px">🏕</div>
-    <div class="park-card-body">
-      <div class="park-card-state">${p.state}</div>
-      <div class="park-card-name" style="font-size:15px">${p.name}</div>
-      <div class="park-card-rating"><span class="stars" style="font-size:12px">${'★'.repeat(Math.round(p.rating))}</span><span class="rating-count"> ${p.rating}</span></div>
-      <div class="park-card-price"><span class="price-amount" style="font-size:16px">$${p.price}</span><span class="price-label">/night</span></div>
-    </div>
-  </a>`).join('');
-
 // Set default dates
 const today = new Date();
 const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-const dayAfter = new Date(today); dayAfter.setDate(today.getDate() + 4);
-document.getElementById('checkIn').value = tomorrow.toISOString().split('T')[0];
+const dayAfter  = new Date(today); dayAfter.setDate(today.getDate() + 4);
+document.getElementById('checkIn').value  = tomorrow.toISOString().split('T')[0];
 document.getElementById('checkOut').value = dayAfter.toISOString().split('T')[0];
-updateBooking();
+
+// Resume pending booking after login
+document.addEventListener('DOMContentLoaded', () => {
+  waitForSb(async () => {
+    const pending = sessionStorage.getItem('rvspot_pending_booking');
+    if (pending && window._sb) {
+      const { data: { user } } = await window._sb.auth.getUser();
+      if (user) {
+        sessionStorage.removeItem('rvspot_pending_booking');
+        await startBookingCheckout(user);
+      }
+    }
+  });
+});
+
+waitForSb(loadPark);
 </script>
 </body>
 </html>
