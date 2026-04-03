@@ -142,8 +142,8 @@
       </table>
       <div style="padding:24px;text-align:center;background:var(--green-50);border-top:1px solid var(--green-100)">
         <p style="font-size:14px;color:var(--green-800);margin-bottom:16px">Pro Parks that fill just 2 extra bookings per month recover their subscription cost.</p>
-        <button class="btn btn-primary btn-lg" onclick="openModal('claimModal')">Start 30-day free trial</button>
-        <p class="text-sm text-muted mt-8">No credit card required · Cancel anytime</p>
+        <button class="btn btn-primary btn-lg" data-plan="park_pro" onclick="startCheckout('park_pro')">Subscribe — $79/mo</button>
+        <p class="text-sm text-muted mt-8">Cancel anytime · Secure checkout via Stripe</p>
       </div>
     </div>
   </div>
@@ -248,5 +248,6 @@ function toggleFaq(el) {
   icon.classList.toggle('open');
 }
 </script>
+<script src="../js/stripe.js"></script>
 </body>
 </html>
