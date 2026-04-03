@@ -1,1 +1,6 @@
 _worker.js
+node_modules/
+.wrangler/
+.git/
+backend/
+docs/
