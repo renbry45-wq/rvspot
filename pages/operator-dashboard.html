@@ -83,6 +83,24 @@
 
   <!-- Main content -->
   <main class="main">
+
+    <!-- Stripe Connect: not live banner -->
+    <div id="connectBanner" style="display:none;background:var(--amber-100);border:1px solid var(--amber-300);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:16px;font-weight:700;color:var(--amber-800);margin-bottom:4px">⚠️ Your park is not live yet</div>
+          <div style="font-size:14px;color:var(--amber-700);line-height:1.5">Guests cannot book until you connect your bank account. It takes less than 5 minutes — once done, your park goes live immediately.</div>
+        </div>
+        <button id="connectStripeBtn" class="btn btn-primary connect-stripe-btn" onclick="startConnectOnboarding()">Connect your bank account →</button>
+      </div>
+    </div>
+
+    <!-- Stripe Connect: success banner -->
+    <div id="connectSuccessBanner" style="display:none;background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px">
+      <div style="font-size:16px;font-weight:700;color:var(--green-800);margin-bottom:4px">✓ Bank account connected — your park is live!</div>
+      <div style="font-size:14px;color:var(--green-700)">Guests can now book and payments go directly to your account.</div>
+    </div>
+
     <div class="page-header">
       <div>
         <div class="page-title">Good morning, Sandra 👋</div>
@@ -232,6 +250,9 @@
           <button class="btn btn-secondary w-full" style="justify-content:flex-start;gap:12px" onclick="showToast('Requesting Wi-Fi speed audit…','success')">
             <span>📶</span> Request Wi-Fi speed audit
           </button>
+          <button id="connectStripeActionBtn" class="btn btn-secondary w-full connect-stripe-btn" style="justify-content:flex-start;gap:12px" onclick="startConnectOnboarding()">
+            <span>🏦</span> Connect bank account (Stripe)
+          </button>
         </div>
 
         <div style="margin-top:20px;padding:16px;background:var(--amber-100);border-radius:var(--radius-md)">
@@ -245,5 +266,106 @@
 </div>
 
 <script src="../js/app.js"></script>
+<script>
+/* ── Stripe Connect onboarding ── */
+async function startConnectOnboarding() {
+  const btns = document.querySelectorAll('.connect-stripe-btn');
+  btns.forEach(b => { b.disabled = true; b.textContent = 'Redirecting to Stripe…'; });
+
+  const sb = window._sb;
+  if (!sb) {
+    showToast('Please wait a moment and try again.', 'warning');
+    btns.forEach(b => { b.disabled = false; });
+    return;
+  }
+
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) {
+    showToast('Please sign in to continue.', 'warning');
+    btns.forEach(b => { b.disabled = false; });
+    return;
+  }
+
+  const { data: parks, error } = await sb
+    .from('parks')
+    .select('id')
+    .eq('operator_id', user.id)
+    .limit(1);
+
+  if (error || !parks?.length) {
+    showToast('No park found for your account.', 'error');
+    btns.forEach(b => { b.disabled = false; });
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/connect-onboard', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ userId: user.id, parkId: parks[0].id }),
+    });
+    const { url, error: apiError } = await res.json();
+    if (apiError) throw new Error(apiError);
+    window.location.href = url;
+  } catch (err) {
+    showToast(err.message || 'Failed to start setup. Please try again.', 'error');
+    btns.forEach(b => { b.disabled = false; });
+  }
+}
+
+/* ── On load: check connect status and handle return from Stripe ── */
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 30) return;
+  setTimeout(() => waitForSb(cb, attempts + 1), 150);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params       = new URLSearchParams(location.search);
+  const connectParam = params.get('connect');
+
+  // Operator was redirected back because the account link expired — restart
+  if (connectParam === 'refresh') {
+    showToast('Your session expired. Restarting setup…', 'warning');
+    waitForSb(startConnectOnboarding);
+    return;
+  }
+
+  waitForSb(async () => {
+    const sb = window._sb;
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    const { data: parks } = await sb
+      .from('parks')
+      .select('id, stripe_connect_status')
+      .eq('operator_id', user.id)
+      .limit(1);
+
+    if (!parks?.length) return;
+    const park = parks[0];
+
+    // Returning from successful Stripe onboarding — verify with server
+    // (this also updates the DB if Stripe reports charges_enabled)
+    if (connectParam === 'success') {
+      const res    = await fetch(`/api/connect-status?park_id=${park.id}`);
+      const { status } = await res.json();
+      if (status === 'active') {
+        document.getElementById('connectSuccessBanner').style.display = '';
+        document.getElementById('connectStripeActionBtn').style.display = 'none';
+        return;
+      }
+      // Onboarding incomplete — show the setup banner instead
+    }
+
+    if (park.stripe_connect_status !== 'active') {
+      document.getElementById('connectBanner').style.display = '';
+    } else {
+      // Already connected: hide the Quick Actions button so it's not confusing
+      document.getElementById('connectStripeActionBtn').style.display = 'none';
+    }
+  });
+});
+</script>
 </body>
 </html>

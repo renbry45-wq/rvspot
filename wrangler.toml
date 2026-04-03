@@ -1,0 +1,12 @@
+# RVSpot.net — Cloudflare Pages / Worker configuration
+# Docs: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "rvspot"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+# Cron trigger for the 48-hour Stripe Connect reminder email.
+# After deploying, also enable this in:
+#   Cloudflare Dashboard → Pages → rvspot → Settings → Functions → Cron Triggers
+[triggers]
+crons = ["0 * * * *"]  # Runs every hour; sendConnectReminders() is idempotent

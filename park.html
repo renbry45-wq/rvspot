@@ -326,14 +326,22 @@
           <select><option>1 adult</option><option>2 adults</option><option>2 adults + children</option></select>
         </div>
 
-        <button class="btn btn-primary w-full btn-lg" onclick="initiateBooking()">Reserve now</button>
-        <p class="text-center mt-8 text-sm text-muted">You won't be charged yet</p>
+        <div id="bookingAction">
+          <button class="btn btn-primary w-full btn-lg" onclick="initiateBooking()">Reserve now</button>
+          <p class="text-center mt-8 text-sm text-muted">You won't be charged yet</p>
+        </div>
+        <div id="bookingUnavailable" style="display:none;background:var(--cream-100);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;text-align:center">
+          <div style="font-size:14px;font-weight:600;color:var(--slate-700);margin-bottom:4px">Not currently accepting online bookings</div>
+          <div style="font-size:13px;color:var(--slate-500)">Contact this park directly to arrange a stay.</div>
+          <div id="bookingUnavailablePhone" style="display:none;margin-top:8px;font-size:14px;color:var(--green-700);font-weight:600"></div>
+        </div>
 
         <div class="booking-summary" id="bookingSummary">
           <div class="booking-line"><span id="nightsLabel">$45 × 3 nights</span><span id="nightsTotal">$135</span></div>
-          <div class="booking-line"><span>RVSpot service fee</span><span>$12</span></div>
-          <div class="booking-line"><span>Taxes & fees</span><span>$18</span></div>
-          <div class="booking-line total"><span>Total</span><span id="bookingTotal">$165</span></div>
+          <div class="booking-line"><span>RVSpot service fee (8%)</span><span id="serviceFeeTotal">$11</span></div>
+          <div class="booking-line"><span>RVSpot booking fee (3%)</span><span id="platformFeeTotal">$4</span></div>
+          <div class="booking-line"><span>Taxes &amp; fees</span><span id="taxTotal">$18</span></div>
+          <div class="booking-line total"><span>Total</span><span id="bookingTotal">$168</span></div>
         </div>
 
         <hr>
@@ -411,6 +419,7 @@ function populatePark(p) {
   tags.innerHTML += `<span class="tag">${p.type}</span>`;
   document.getElementById('parkDesc').textContent = `${p.name} in ${p.city}, ${p.state} offers a premium RV experience with top-rated facilities and a welcoming community. ${p.wifi ? 'High-speed Wi-Fi is available throughout the park.' : ''} ${p.longstay ? 'Long-term and monthly stay options available.' : ''}`;
   updateBooking();
+  renderBookingState();
   renderNearby();
 }
 
@@ -420,7 +429,7 @@ async function loadPark() {
     try {
       const { data, error } = await window._sb
         .from('parks')
-        .select('id,name,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count')
+        .select('id,name,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,stripe_connect_status,phone')
         .eq('id', rawParkId)
         .single();
       if (!error && data) {
@@ -431,6 +440,8 @@ async function loadPark() {
           pets: data.pets_allowed, ev: data.has_ev_charging,
           type: data.type || 'RV Park', rating: data.avg_rating || 0,
           reviews: data.review_count || 0,
+          connectStatus: data.stripe_connect_status || 'not_started',
+          phone: data.phone || null,
         });
         return;
       }
@@ -469,11 +480,26 @@ function updateBooking() {
     const nights = isNaN(ci) || isNaN(co) ? 3 : Math.max(1, Math.round((co - ci) / 86400000));
     subtotal = park.price * nights; label = `$${park.price} × ${nights} night${nights !== 1 ? 's' : ''}`;
   }
-  const fee = Math.round(subtotal * 0.08);
-  const tax = Math.round(subtotal * 0.12);
-  document.getElementById('nightsLabel').textContent = label;
-  document.getElementById('nightsTotal').textContent = `$${subtotal.toFixed(0)}`;
-  document.getElementById('bookingTotal').textContent = `$${(subtotal + fee + tax).toFixed(0)}`;
+  const fee         = Math.round(subtotal * 0.08);
+  const platformFee = Math.round(subtotal * 0.03);
+  const tax         = Math.round(subtotal * 0.12);
+  document.getElementById('nightsLabel').textContent      = label;
+  document.getElementById('nightsTotal').textContent      = `$${subtotal.toFixed(0)}`;
+  document.getElementById('serviceFeeTotal').textContent  = `$${fee.toFixed(0)}`;
+  document.getElementById('platformFeeTotal').textContent = `$${platformFee.toFixed(0)}`;
+  document.getElementById('taxTotal').textContent         = `$${tax.toFixed(0)}`;
+  document.getElementById('bookingTotal').textContent     = `$${(subtotal + fee + platformFee + tax).toFixed(0)}`;
+}
+
+function renderBookingState() {
+  const isActive = park.connectStatus === 'active';
+  document.getElementById('bookingAction').style.display      = isActive ? '' : 'none';
+  document.getElementById('bookingUnavailable').style.display = isActive ? 'none' : '';
+  if (!isActive && park.phone) {
+    const el = document.getElementById('bookingUnavailablePhone');
+    el.textContent   = `📞 ${park.phone}`;
+    el.style.display = '';
+  }
 }
 
 async function initiateBooking() {
@@ -502,8 +528,9 @@ async function startBookingCheckout(user) {
   const checkOut  = document.getElementById('checkOut').value;
   const subtotal  = parseFloat(document.getElementById('nightsTotal').textContent.replace('$','')) || 0;
   const total     = parseFloat(document.getElementById('bookingTotal').textContent.replace('$','')) || 0;
-  const serviceFee = Math.round(subtotal * 0.08 * 100) / 100;
-  const taxAmount  = Math.round(subtotal * 0.12 * 100) / 100;
+  const serviceFee  = Math.round(subtotal * 0.08 * 100) / 100;
+  const platformFee = Math.round(subtotal * 0.03 * 100) / 100;
+  const taxAmount   = Math.round(subtotal * 0.12 * 100) / 100;
   try {
     const res = await fetch('/api/create-booking-session', {
       method: 'POST',
@@ -512,7 +539,7 @@ async function startBookingCheckout(user) {
         parkId: park.id, parkName: park.name,
         userId: user.id, userEmail: user.email,
         checkIn, checkOut, stayType,
-        baseAmount: subtotal, serviceFee, taxAmount, totalAmount: total,
+        baseAmount: subtotal, serviceFee, platformFee, taxAmount, totalAmount: total,
       }),
     });
     const { url, error } = await res.json();

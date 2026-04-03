@@ -1,12 +1,22 @@
 /* ============================================
    RVSpot.net — Cloudflare Worker
    Handles /api/* routes; serves static assets for everything else.
+
+   Stripe Connect env vars required (Cloudflare Pages dashboard):
+     STRIPE_SECRET_KEY              — platform Stripe secret key
+     STRIPE_WEBHOOK_SECRET          — platform webhook signing secret
+     STRIPE_CONNECT_WEBHOOK_SECRET  — Connect webhook signing secret
+       → Create a separate "Connect" webhook endpoint in Stripe Dashboard
+         pointing to /api/stripe-connect-webhook, listening for account.updated
+     SUPABASE_SERVICE_ROLE_KEY
+     RESEND_API_KEY
    ============================================ */
 
 const SUPABASE_URL     = 'https://uydiifdgjzylfxxaoznv.supabase.co';
 const PRICE_PARK_PRO   = 'price_1THw7R1J9Y6gYEOf0uy5xzEj';
 const PRICE_NOMAD_PRO  = 'price_1THw3g1J9Y6gYEOfGNjMp4ke';
 const ALLOWED_PRICES   = new Set([PRICE_PARK_PRO, PRICE_NOMAD_PRO]);
+const PLATFORM_FEE_RATE = 0.03; // 3% collected by RVSpot on every booking
 
 const CORS = {
   'Access-Control-Allow-Origin':  'https://rvspot.net',
@@ -26,25 +36,37 @@ export default {
     if (url.pathname === '/api/create-checkout-session' && request.method === 'POST') {
       return handleCheckout(request, env);
     }
-
     if (url.pathname === '/api/stripe-webhook' && request.method === 'POST') {
       return handleWebhook(request, env);
     }
-
     if (url.pathname === '/api/create-booking-session' && request.method === 'POST') {
       return handleBookingCheckout(request, env);
     }
-
     if (url.pathname === '/api/get-booking-session' && request.method === 'GET') {
       return handleGetBookingSession(request, env);
+    }
+    if (url.pathname === '/api/connect-onboard' && request.method === 'POST') {
+      return handleConnectOnboard(request, env);
+    }
+    if (url.pathname === '/api/connect-status' && request.method === 'GET') {
+      return handleConnectStatus(request, env);
+    }
+    if (url.pathname === '/api/stripe-connect-webhook' && request.method === 'POST') {
+      return handleConnectWebhook(request, env);
     }
 
     // Serve static assets for everything else
     return env.ASSETS.fetch(request);
   },
+
+  // Cron trigger: runs every hour, sends 48-hour Connect reminder emails.
+  // Configure in Cloudflare Pages → Functions → Cron Triggers: "0 * * * *"
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendConnectReminders(env));
+  },
 };
 
-/* ─── Checkout session ──────────────────────────────────────── */
+/* ─── Subscription checkout session ────────────────────────── */
 
 async function handleCheckout(request, env) {
   let body;
@@ -99,7 +121,7 @@ async function handleCheckout(request, env) {
   return json({ url: session.url }, 200);
 }
 
-/* ─── Stripe webhook ────────────────────────────────────────── */
+/* ─── Stripe webhook (platform account) ────────────────────── */
 
 async function handleWebhook(request, env) {
   const payload   = await request.text();
@@ -114,9 +136,9 @@ async function handleWebhook(request, env) {
     switch (event.type) {
 
       case 'checkout.session.completed': {
-        const session  = event.data.object;
-        const userId   = session.metadata?.user_id;
-        const parkId   = session.metadata?.park_id;
+        const session = event.data.object;
+        const userId  = session.metadata?.user_id;
+        const parkId  = session.metadata?.park_id;
 
         // Booking payment (one-time)
         if (parkId && userId) {
@@ -128,6 +150,7 @@ async function handleWebhook(request, env) {
             stay_type:                session.metadata.stay_type,
             base_amount:              parseFloat(session.metadata.base_amount),
             service_fee:              parseFloat(session.metadata.service_fee),
+            platform_fee:             parseFloat(session.metadata.platform_fee || 0),
             tax_amount:               parseFloat(session.metadata.tax_amount),
             total_amount:             parseFloat(session.metadata.total_amount),
             stripe_payment_intent_id: session.payment_intent,
@@ -136,11 +159,12 @@ async function handleWebhook(request, env) {
           break;
         }
 
+        // Subscription payment
         const planType = session.metadata?.plan_type;
         const subId    = session.subscription;
         if (!userId || !subId) break;
 
-        const sub = await stripeGet(`/v1/subscriptions/${subId}`, env);
+        const sub         = await stripeGet(`/v1/subscriptions/${subId}`, env);
         const priceId     = sub.items?.data?.[0]?.price?.id;
         const periodEnd   = new Date(sub.current_period_end   * 1000).toISOString();
         const periodStart = new Date(sub.current_period_start * 1000).toISOString();
@@ -163,7 +187,6 @@ async function handleWebhook(request, env) {
             stripe_customer_id: session.customer,
           });
         }
-
         if (planType === 'park_pro') {
           await sbPatch(env, `/rest/v1/parks?operator_id=eq.${userId}`, {
             plan:                   'pro',
@@ -240,13 +263,30 @@ async function handleBookingCheckout(request, env) {
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
   const { parkId, parkName, userId, userEmail, checkIn, checkOut,
-          stayType, baseAmount, serviceFee, taxAmount, totalAmount } = body;
+          stayType, baseAmount, serviceFee, platformFee, taxAmount, totalAmount } = body;
 
   if (!parkId || !userId || !userEmail || !totalAmount) {
     return json({ error: 'Missing required parameters' }, 400);
   }
 
-  const amountCents = Math.round(parseFloat(totalAmount) * 100);
+  // Enforce Stripe Connect — never fall back to charging RVSpot directly
+  const parks = await sbGet(env,
+    `/rest/v1/parks?id=eq.${parkId}&select=stripe_connect_account_id,stripe_connect_status`);
+  const park = parks[0];
+
+  if (!park) {
+    return json({ error: 'Park not found' }, 404);
+  }
+  if (park.stripe_connect_status !== 'active') {
+    return json({ error: 'This park is not currently accepting online bookings.' }, 422);
+  }
+
+  const amountCents      = Math.round(parseFloat(totalAmount) * 100);
+  // application_fee_amount must not exceed the charge; compute from platformFee if provided,
+  // otherwise fall back to PLATFORM_FEE_RATE of total so the math is always consistent.
+  const platformFeeCents = platformFee
+    ? Math.round(parseFloat(platformFee) * 100)
+    : Math.round(amountCents * PLATFORM_FEE_RATE);
 
   const params = new URLSearchParams({
     mode:                                              'payment',
@@ -259,15 +299,19 @@ async function handleBookingCheckout(request, env) {
     success_url: `https://rvspot.net/pages/booking-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url:  `https://rvspot.net/park.html?id=${parkId}`,
     customer_email: userEmail,
-    'metadata[user_id]':      userId,
-    'metadata[park_id]':      parkId,
-    'metadata[check_in]':     checkIn,
-    'metadata[check_out]':    checkOut,
-    'metadata[stay_type]':    stayType,
-    'metadata[base_amount]':  String(baseAmount),
-    'metadata[service_fee]':  String(serviceFee),
-    'metadata[tax_amount]':   String(taxAmount),
-    'metadata[total_amount]': String(totalAmount),
+    'metadata[user_id]':       userId,
+    'metadata[park_id]':       parkId,
+    'metadata[check_in]':      checkIn,
+    'metadata[check_out]':     checkOut,
+    'metadata[stay_type]':     stayType,
+    'metadata[base_amount]':   String(baseAmount),
+    'metadata[service_fee]':   String(serviceFee),
+    'metadata[platform_fee]':  String(platformFee || 0),
+    'metadata[tax_amount]':    String(taxAmount),
+    'metadata[total_amount]':  String(totalAmount),
+    // Route funds to the park operator; RVSpot keeps application_fee_amount
+    'payment_intent_data[application_fee_amount]':     String(platformFeeCents),
+    'payment_intent_data[transfer_data][destination]': park.stripe_connect_account_id,
   });
 
   let stripeRes, session;
@@ -316,6 +360,7 @@ async function handleGetBookingSession(request, env) {
       stay_type:      session.metadata?.stay_type,
       base_amount:    session.metadata?.base_amount,
       service_fee:    session.metadata?.service_fee,
+      platform_fee:   session.metadata?.platform_fee,
       tax_amount:     session.metadata?.tax_amount,
       total_amount:   session.metadata?.total_amount,
       payment_intent: session.payment_intent,
@@ -323,6 +368,196 @@ async function handleGetBookingSession(request, env) {
       payment_status: session.payment_status,
     }
   }, 200);
+}
+
+/* ─── Stripe Connect: start onboarding ──────────────────────── */
+
+async function handleConnectOnboard(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  const { userId, parkId } = body;
+  if (!userId || !parkId) return json({ error: 'Missing parameters' }, 400);
+
+  // Verify park ownership before creating/resuming a Connect account
+  const parks = await sbGet(env,
+    `/rest/v1/parks?id=eq.${parkId}&operator_id=eq.${userId}&select=id,stripe_connect_account_id`);
+  const park = parks[0];
+  if (!park) return json({ error: 'Park not found or access denied' }, 404);
+
+  let accountId = park.stripe_connect_account_id;
+
+  if (!accountId) {
+    // Create a new Stripe Express account for this operator
+    const accountRes = await fetch('https://api.stripe.com/v1/accounts', {
+      method: 'POST',
+      headers: {
+        Authorization:  `Bearer ${env.STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        type:                                     'express',
+        'capabilities[card_payments][requested]': 'true',
+        'capabilities[transfers][requested]':     'true',
+      }),
+    });
+    const account = await accountRes.json();
+    if (!accountRes.ok) {
+      return json({ error: account.error?.message || 'Failed to create Stripe account' }, 400);
+    }
+
+    accountId = account.id;
+    await sbPatch(env, `/rest/v1/parks?id=eq.${parkId}`, {
+      stripe_connect_account_id: accountId,
+      stripe_connect_status:     'pending',
+    });
+  }
+
+  // Account links expire — always generate a fresh one
+  const linkRes = await fetch('https://api.stripe.com/v1/account_links', {
+    method: 'POST',
+    headers: {
+      Authorization:  `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      account:     accountId,
+      refresh_url: `https://rvspot.net/pages/operator-dashboard.html?connect=refresh`,
+      return_url:  `https://rvspot.net/pages/operator-dashboard.html?connect=success`,
+      type:        'account_onboarding',
+    }),
+  });
+  const link = await linkRes.json();
+  if (!linkRes.ok) {
+    return json({ error: link.error?.message || 'Failed to create onboarding link' }, 400);
+  }
+
+  return json({ url: link.url }, 200);
+}
+
+/* ─── Stripe Connect: check status ──────────────────────────── */
+
+async function handleConnectStatus(request, env) {
+  const url    = new URL(request.url);
+  const parkId = url.searchParams.get('park_id');
+  if (!parkId) return json({ error: 'Missing park_id' }, 400);
+
+  const parks = await sbGet(env,
+    `/rest/v1/parks?id=eq.${parkId}&select=stripe_connect_status,stripe_connect_account_id`);
+  const park = parks[0];
+  if (!park) return json({ error: 'Park not found' }, 404);
+
+  // When status is pending, verify directly with Stripe so the dashboard
+  // updates immediately after the operator returns from Connect onboarding —
+  // without waiting for the account.updated webhook to fire.
+  if (park.stripe_connect_account_id && park.stripe_connect_status === 'pending') {
+    const account = await stripeGet(
+      `/v1/accounts/${park.stripe_connect_account_id}`, env);
+    if (account.charges_enabled && account.details_submitted) {
+      await sbPatch(env, `/rest/v1/parks?id=eq.${parkId}`, {
+        stripe_connect_status: 'active',
+      });
+      return json({ status: 'active' }, 200);
+    }
+  }
+
+  return json({ status: park.stripe_connect_status }, 200);
+}
+
+/* ─── Stripe Connect webhook (account.updated) ──────────────── */
+// Set up a separate "Connect" webhook in Stripe Dashboard pointing to
+// /api/stripe-connect-webhook, subscribed to account.updated.
+// Set STRIPE_CONNECT_WEBHOOK_SECRET to its signing secret.
+
+async function handleConnectWebhook(request, env) {
+  const payload   = await request.text();
+  const sigHeader = request.headers.get('stripe-signature');
+
+  const valid = await verifySignature(payload, sigHeader, env.STRIPE_CONNECT_WEBHOOK_SECRET);
+  if (!valid) return new Response('Unauthorized', { status: 401 });
+
+  const event = JSON.parse(payload);
+
+  if (event.type === 'account.updated') {
+    const account = event.data.object;
+    if (account.charges_enabled && account.details_submitted) {
+      await sbPatch(env,
+        `/rest/v1/parks?stripe_connect_account_id=eq.${account.id}`, {
+          stripe_connect_status: 'active',
+        });
+    }
+  }
+
+  return json({ received: true }, 200);
+}
+
+/* ─── Scheduled: 48-hour Stripe Connect reminder emails ─────── */
+
+async function sendConnectReminders(env) {
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+  // Parks whose operators haven't connected, created 48+ hours ago, no reminder sent yet
+  const parks = await sbGet(env,
+    `/rest/v1/parks` +
+    `?stripe_connect_status=neq.active` +
+    `&created_at=lte.${encodeURIComponent(cutoff)}` +
+    `&stripe_connect_reminder_sent_at=is.null` +
+    `&operator_id=not.is.null` +
+    `&select=id,name,phone,operator_id`);
+
+  if (!Array.isArray(parks)) return;
+
+  for (const park of parks) {
+    // Fetch operator email from Supabase Auth (service role required)
+    const authRes = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users/${park.operator_id}`,
+      { headers: sbHeaders(env) });
+    const authUser = await authRes.json();
+    if (!authUser?.email) continue;
+
+    const firstName = authUser.user_metadata?.first_name || 'there';
+
+    await fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: {
+        Authorization:  `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from:    'RVSpot <noreply@rvspot.net>',
+        to:      authUser.email,
+        subject: `${park.name} isn't live yet — connect your bank to start accepting bookings`,
+        html: `
+<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1e293b">
+  <h2 style="color:#1a3c2e">Your park isn't live yet</h2>
+  <p>Hi ${firstName},</p>
+  <p><strong>${park.name}</strong> is listed on RVSpot, but guests can't book yet because you haven't connected your bank account.</p>
+  <p>It takes less than 5 minutes and unlocks:</p>
+  <ul>
+    <li>The "Book Now" button on your listing</li>
+    <li>Booking payments deposited directly to your account</li>
+    <li>Your park appearing in guest search results</li>
+  </ul>
+  <p style="margin-top:24px">
+    <a href="https://rvspot.net/pages/operator-dashboard.html"
+       style="background:#2a8f5e;color:#fff;padding:14px 28px;border-radius:8px;
+              text-decoration:none;display:inline-block;font-weight:600">
+      Connect your bank account →
+    </a>
+  </p>
+  <p style="color:#64748b;font-size:13px;margin-top:32px">
+    Questions? Email us at <a href="mailto:support@rvspot.net" style="color:#2a8f5e">support@rvspot.net</a>
+  </p>
+</div>`,
+      }),
+    });
+
+    // Mark reminder sent so we don't re-send
+    await sbPatch(env, `/rest/v1/parks?id=eq.${park.id}`, {
+      stripe_connect_reminder_sent_at: new Date().toISOString(),
+    });
+  }
 }
 
 /* ─── Stripe helpers ────────────────────────────────────────── */
@@ -338,7 +573,7 @@ async function stripeGet(path, env) {
 
 function sbHeaders(env) {
   return {
-    apikey:          env.SUPABASE_SERVICE_ROLE_KEY,
+    apikey:         env.SUPABASE_SERVICE_ROLE_KEY,
     Authorization:  `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
     'Content-Type': 'application/json',
   };

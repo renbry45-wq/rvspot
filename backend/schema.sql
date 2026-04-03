@@ -101,6 +101,11 @@ CREATE TABLE public.parks (
   -- Platform status
   plan              TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free','pro')),
   stripe_subscription_id TEXT,
+  -- Stripe Connect (required before park can accept bookings)
+  stripe_connect_account_id       TEXT,
+  stripe_connect_status           TEXT NOT NULL DEFAULT 'not_started'
+                                  CHECK (stripe_connect_status IN ('not_started','pending','active')),
+  stripe_connect_reminder_sent_at TIMESTAMPTZ,
   is_verified       BOOLEAN DEFAULT FALSE,
   is_active         BOOLEAN DEFAULT TRUE,
   is_claimed        BOOLEAN DEFAULT FALSE,
@@ -165,6 +170,7 @@ CREATE TABLE public.bookings (
   -- Pricing
   base_amount         DECIMAL(10,2) NOT NULL,
   service_fee         DECIMAL(10,2) NOT NULL DEFAULT 0,
+  platform_fee        DECIMAL(10,2) NOT NULL DEFAULT 0,
   tax_amount          DECIMAL(10,2) NOT NULL DEFAULT 0,
   total_amount        DECIMAL(10,2) NOT NULL,
   currency            TEXT DEFAULT 'USD',
@@ -386,6 +392,18 @@ FOR EACH ROW EXECUTE FUNCTION update_park_rating();
 
 -- ────────────────────────────────────────────
 -- SEED DATA (run after schema is created)
+-- ────────────────────────────────────────────
+-- ────────────────────────────────────────────
+-- MIGRATIONS (run against existing deployments)
+-- ────────────────────────────────────────────
+ALTER TABLE public.parks
+  ADD COLUMN IF NOT EXISTS stripe_connect_account_id       TEXT,
+  ADD COLUMN IF NOT EXISTS stripe_connect_status           TEXT NOT NULL DEFAULT 'not_started',
+  ADD COLUMN IF NOT EXISTS stripe_connect_reminder_sent_at TIMESTAMPTZ;
+
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS platform_fee DECIMAL(10,2) NOT NULL DEFAULT 0;
+
 -- ────────────────────────────────────────────
 -- Insert 6 sample parks for testing
 INSERT INTO public.parks (name, slug, type, city, state, lat, lng, price_nightly, price_monthly, has_wifi, has_50amp, has_ev_charging, allows_long_stay, pets_allowed, avg_rating, review_count, plan, is_active, is_verified) VALUES
