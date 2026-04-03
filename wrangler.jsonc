@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rvspot",
+  "main": "_worker.js",
   "compatibility_date": "2026-04-03",
   "observability": {
     "enabled": true
