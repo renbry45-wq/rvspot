@@ -42,6 +42,7 @@
     .map-view.active { display:block; }
     @media(max-width:900px){ .results-layout{grid-template-columns:1fr;} .filter-sidebar{display:none;} .park-list-card{grid-template-columns:1fr;} .park-list-img{height:180px;} .park-list-right{border-left:none;border-top:1px solid var(--cream-200);flex-direction:row;align-items:center;} }
   </style>
+  <script src="js/analytics.js"></script>
 </head>
 <body>
 
@@ -337,6 +338,14 @@ if(params.get('longstay')==='on') document.getElementById('f-monthly').checked=t
 if(params.get('ev')==='on') document.getElementById('f-ev').checked=true;
 
 waitForSb(loadParks);
+
+// GA4 — Event D: search submitted
+document.querySelector('.search-box').addEventListener('submit', function () {
+  var term = (document.getElementById('searchQ').value || '').trim();
+  if (term && window.gtag) {
+    gtag('event', 'search', { search_term: term });
+  }
+});
 </script>
 </body>
 </html>

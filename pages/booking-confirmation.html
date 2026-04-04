@@ -6,6 +6,7 @@
   <title>Booking Confirmed — RVSpot</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
   <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/analytics.js"></script>
   <style>
     .confirm-wrap { max-width:560px; margin:0 auto; padding:60px 24px; text-align:center; }
     .confirm-icon { width:72px; height:72px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:36px; }
@@ -100,6 +101,28 @@ function showSuccess(booking) {
   document.getElementById('confirmTax').textContent   = `$${parseFloat(booking.tax_amount || 0).toFixed(2)}`;
   document.getElementById('confirmTotal').textContent = `$${parseFloat(booking.total_amount || 0).toFixed(2)}`;
   document.getElementById('successState').style.display = 'block';
+
+  // GA4 — Event C: purchase (populates GA4 revenue reports)
+  if (window.gtag) {
+    var ciDate = new Date(booking.check_in);
+    var coDate = new Date(booking.check_out);
+    var nights = (!isNaN(ciDate) && !isNaN(coDate))
+      ? Math.max(1, Math.round((coDate - ciDate) / 86400000))
+      : 1;
+    var baseAmt  = parseFloat(booking.base_amount  || 0);
+    var totalAmt = parseFloat(booking.total_amount || 0);
+    gtag('event', 'purchase', {
+      transaction_id: booking.payment_intent,
+      value:          totalAmt,
+      currency:       'USD',
+      items: [{
+        item_name:     'RV Park Stay',
+        item_category: 'RV Park',
+        quantity:      nights,
+        price:         nights > 0 ? parseFloat((baseAmt / nights).toFixed(2)) : baseAmt,
+      }],
+    });
+  }
 }
 
 async function init() {

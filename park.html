@@ -47,6 +47,7 @@
     .nearby-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
     @media(max-width:900px){ .park-layout{grid-template-columns:1fr;} .booking-card{position:static;} }
   </style>
+  <script src="js/analytics.js"></script>
 </head>
 <body>
 
@@ -400,6 +401,14 @@ function waitForSb(cb, attempts = 0) {
 
 function populatePark(p) {
   park = p;
+  // GA4 — Event A: park profile view
+  if (window.gtag) {
+    gtag('event', 'park_profile_view', {
+      park_id:   p.id,
+      park_name: p.name,
+      park_state: p.state,
+    });
+  }
   document.getElementById('heroState').textContent = `${p.state} · ${p.city}`;
   document.getElementById('heroName').textContent = p.name;
   document.getElementById('bcName').textContent = p.name;
@@ -503,6 +512,14 @@ function renderBookingState() {
 }
 
 async function initiateBooking() {
+  // GA4 — Event B: guest clicked Book Now
+  if (window.gtag && park) {
+    gtag('event', 'booking_started', {
+      park_id:      park.id,
+      park_name:    park.name,
+      nightly_rate: park.price,
+    });
+  }
   const sb = window._sb;
   if (!sb) { showToast('Please wait a moment and try again.', 'warning'); return; }
   const { data: { user } } = await sb.auth.getUser();

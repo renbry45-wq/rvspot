@@ -7,6 +7,7 @@
   <meta name="description" content="List your RV park on RVSpot and reach 823K+ monthly searches. Pro Park subscription gives you full analytics, direct booking, and zero commissions.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
   <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/analytics.js"></script>
   <style>
     .op-hero { background:var(--slate-900); padding:80px 0; text-align:center; position:relative; overflow:hidden; }
     .op-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 60%, rgba(42,143,94,0.2) 0%, transparent 70%); pointer-events:none; }
@@ -231,7 +232,12 @@
       <div class="form-group"><label class="form-label">Your name</label><input type="text" placeholder="Jane Smith"></div>
       <div class="form-group"><label class="form-label">Park email address</label><input type="email" placeholder="manager@yourpark.com"><div class="form-hint">We'll send a verification link to this address to confirm ownership.</div></div>
       <div class="form-group"><label class="form-label">Phone (optional)</label><input type="tel" placeholder="(555) 000-0000"></div>
-      <button class="btn btn-primary w-full" onclick="showToast('Verification email sent! Check your inbox to complete listing setup.','success');closeModal('claimModal')">Send verification email</button>
+      <button class="btn btn-primary w-full" onclick="
+        var stateVal = document.querySelector('#claimModal input[placeholder=\'Texas\']')?.value?.trim() || '';
+        if (window.gtag) gtag('event', 'park_registered', { park_state: stateVal, tier: 'basic' });
+        showToast('Verification email sent! Check your inbox to complete listing setup.','success');
+        closeModal('claimModal');
+      ">Send verification email</button>
       <p class="text-center mt-8 text-sm text-muted">Free to list. No credit card required.</p>
     </div>
   </div>
