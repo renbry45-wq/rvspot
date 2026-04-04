@@ -2,13 +2,14 @@
    RVSpot.net — Cloudflare Worker
    Handles /api/* routes; serves static assets for everything else.
 
-   Stripe Connect env vars required (Cloudflare Pages dashboard):
+   Env vars required (Cloudflare Pages dashboard / .dev.vars locally):
      STRIPE_SECRET_KEY              — platform Stripe secret key
      STRIPE_WEBHOOK_SECRET          — platform webhook signing secret
      STRIPE_CONNECT_WEBHOOK_SECRET  — Connect webhook signing secret
        → Create a separate "Connect" webhook endpoint in Stripe Dashboard
          pointing to /api/stripe-connect-webhook, listening for account.updated
      SUPABASE_SERVICE_ROLE_KEY
+     SUPABASE_JWT_SECRET            — from Supabase dashboard → Settings → API → JWT Secret
      RESEND_API_KEY
    ============================================ */
 
@@ -21,7 +22,7 @@ const PLATFORM_FEE_RATE = 0.03; // 3% collected by RVSpot on every booking
 const CORS = {
   'Access-Control-Allow-Origin':  'https://rvspot.net',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default {
@@ -69,13 +70,18 @@ export default {
 /* ─── Subscription checkout session ────────────────────────── */
 
 async function handleCheckout(request, env) {
+  // Authenticate: userId comes from the verified JWT, never from the body
+  const auth = await requireAuth(request, env);
+  if (auth.error) return auth.error;
+  const userId = auth.userId;
+
   let body;
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { priceId, userEmail, userId, planType } = body;
+  const { priceId, userEmail, planType } = body;
 
-  if (!ALLOWED_PRICES.has(priceId) || !userEmail || !userId) {
+  if (!ALLOWED_PRICES.has(priceId) || !userEmail) {
     return json({ error: 'Missing or invalid parameters' }, 400);
   }
 
@@ -258,14 +264,19 @@ async function handleWebhook(request, env) {
 /* ─── Booking checkout session ──────────────────────────────── */
 
 async function handleBookingCheckout(request, env) {
+  // Authenticate: userId comes from the verified JWT, never from the body
+  const auth = await requireAuth(request, env);
+  if (auth.error) return auth.error;
+  const userId = auth.userId;
+
   let body;
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { parkId, parkName, userId, userEmail, checkIn, checkOut,
+  const { parkId, parkName, userEmail, checkIn, checkOut,
           stayType, baseAmount, serviceFee, platformFee, taxAmount, totalAmount } = body;
 
-  if (!parkId || !userId || !userEmail || !totalAmount) {
+  if (!parkId || !userEmail || !totalAmount) {
     return json({ error: 'Missing required parameters' }, 400);
   }
 
@@ -373,14 +384,19 @@ async function handleGetBookingSession(request, env) {
 /* ─── Stripe Connect: start onboarding ──────────────────────── */
 
 async function handleConnectOnboard(request, env) {
+  // Authenticate: userId comes from the verified JWT, never from the body
+  const auth = await requireAuth(request, env);
+  if (auth.error) return auth.error;
+  const userId = auth.userId;
+
   let body;
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { userId, parkId } = body;
-  if (!userId || !parkId) return json({ error: 'Missing parameters' }, 400);
+  const { parkId } = body;
+  if (!parkId) return json({ error: 'Missing parkId' }, 400);
 
-  // Verify park ownership before creating/resuming a Connect account
+  // Verify park ownership — operator_id must match the authenticated userId
   const parks = await sbGet(env,
     `/rest/v1/parks?id=eq.${parkId}&operator_id=eq.${userId}&select=id,stripe_connect_account_id`);
   const park = parks[0];
@@ -557,6 +573,81 @@ async function sendConnectReminders(env) {
     await sbPatch(env, `/rest/v1/parks?id=eq.${park.id}`, {
       stripe_connect_reminder_sent_at: new Date().toISOString(),
     });
+  }
+}
+
+/* ─── JWT authentication (Supabase HS256) ───────────────────── */
+
+// Decodes a base64url string to a UTF-8 string (for header / payload)
+function b64urlToStr(s) {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=');
+  return atob(pad);
+}
+
+// Decodes a base64url string to a Uint8Array (for the signature)
+function b64urlToBytes(s) {
+  const str = b64urlToStr(s);
+  const buf = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i);
+  return buf;
+}
+
+// Verifies a Supabase-issued JWT (HS256) and returns the payload.
+// Throws on any validation failure so callers never see a partial result.
+async function verifySupabaseJWT(token, secret) {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Malformed JWT');
+
+  // 1. Decode and validate header
+  const header = JSON.parse(b64urlToStr(parts[0]));
+  if (header.alg !== 'HS256') throw new Error(`Unsupported algorithm: ${header.alg}`);
+
+  // 2. Import the HMAC-SHA256 key from the raw secret string
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+
+  // 3. Verify signature: HMAC-SHA256( base64url(header) + '.' + base64url(payload) )
+  const signingInput = `${parts[0]}.${parts[1]}`;
+  const valid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    b64urlToBytes(parts[2]),
+    new TextEncoder().encode(signingInput)
+  );
+  if (!valid) throw new Error('Invalid JWT signature');
+
+  // 4. Decode payload and check expiry
+  const payload = JSON.parse(b64urlToStr(parts[1]));
+  if (!payload.exp || Math.floor(Date.now() / 1000) > payload.exp) {
+    throw new Error('JWT has expired');
+  }
+  if (!payload.sub) throw new Error('JWT missing sub claim');
+
+  return payload;
+}
+
+// Extracts and verifies the Bearer token from the Authorization header.
+// Returns { userId } on success, or { error: Response } on failure.
+// Usage: const auth = await requireAuth(request, env);
+//        if (auth.error) return auth.error;
+//        const userId = auth.userId;
+async function requireAuth(request, env) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { error: json({ error: 'Unauthorized' }, 401) };
+  }
+  const token = authHeader.slice(7); // strip 'Bearer '
+  try {
+    const payload = await verifySupabaseJWT(token, env.SUPABASE_JWT_SECRET);
+    return { userId: payload.sub };
+  } catch {
+    return { error: json({ error: 'Unauthorized' }, 401) };
   }
 }
 

@@ -532,12 +532,20 @@ async function startBookingCheckout(user) {
   const platformFee = Math.round(subtotal * 0.03 * 100) / 100;
   const taxAmount   = Math.round(subtotal * 0.12 * 100) / 100;
   try {
+    // Get the Supabase session JWT — the Worker verifies this and reads userId from it
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Session expired. Please sign in again.');
+
     const res = await fetch('/api/create-booking-session', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({
         parkId: park.id, parkName: park.name,
-        userId: user.id, userEmail: user.email,
+        userEmail: user.email,
+        // userId intentionally omitted — Worker reads it from the verified JWT
         checkIn, checkOut, stayType,
         baseAmount: subtotal, serviceFee, platformFee, taxAmount, totalAmount: total,
       }),

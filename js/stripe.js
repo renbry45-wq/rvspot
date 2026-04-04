@@ -33,14 +33,21 @@ async function startCheckout(planType) {
   if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to checkout…'; }
 
   try {
+    // Get the Supabase session JWT — this is what the Worker verifies
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Session expired. Please sign in again.');
+
     const res = await fetch('/api/create-checkout-session', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({
         priceId,
         userEmail: user.email,
-        userId:    user.id,
         planType,
+        // userId intentionally omitted — Worker reads it from the verified JWT
       }),
     });
 
