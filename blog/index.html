@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RVSpot Blog — RV Tips, Destination Guides & Park Spotlights</title>
+  <meta name="description" content="RV travel tips, destination guides, park spotlights, and gear reviews from the RVSpot team. Plan your next adventure.">
+  <meta property="og:title" content="RVSpot Blog">
+  <meta property="og:description" content="RV travel tips, destination guides, park spotlights, and gear reviews.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rvspot.net/blog">
+  <link rel="canonical" href="https://rvspot.net/blog">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/analytics.js"></script>
+  <style>
+    .blog-hero { background: var(--green-900); padding: 64px 0 56px; text-align: center; position: relative; overflow: hidden; }
+    .blog-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 80%, rgba(42,143,94,0.25) 0%, transparent 65%); }
+    .blog-hero-inner { position: relative; }
+    .blog-hero h1 { color: var(--white); font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 12px; }
+    .blog-hero p { color: rgba(255,255,255,0.65); font-size: 17px; max-width: 520px; margin: 0 auto; }
+    .blog-filters { background: var(--white); border-bottom: 1px solid var(--cream-300); padding: 16px 0; position: sticky; top: 64px; z-index: 10; }
+    .blog-filter-inner { max-width: 1120px; margin: 0 auto; padding: 0 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .cat-btn { padding: 7px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1.5px solid var(--cream-300); background: var(--white); color: var(--slate-500); cursor: pointer; transition: all var(--transition); }
+    .cat-btn:hover { border-color: var(--green-600); color: var(--green-700); }
+    .cat-btn.active { background: var(--green-800); color: var(--white); border-color: var(--green-800); }
+    .blog-main { max-width: 1120px; margin: 0 auto; padding: 40px 24px; }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px; }
+    .blog-card { background: var(--white); border-radius: var(--radius-xl); border: 1px solid var(--cream-300); overflow: hidden; transition: all var(--transition); text-decoration: none; color: inherit; display: flex; flex-direction: column; }
+    .blog-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .blog-card-img { height: 200px; background-size: cover; background-position: center; background-color: var(--green-100); display: flex; align-items: center; justify-content: center; font-size: 48px; flex-shrink: 0; }
+    .blog-card-body { padding: 20px 24px 24px; display: flex; flex-direction: column; flex: 1; }
+    .blog-card-cat { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--amber-100); color: var(--amber-700); margin-bottom: 10px; align-self: flex-start; }
+    .blog-card-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--slate-900); line-height: 1.35; margin-bottom: 10px; }
+    .blog-card-excerpt { font-size: 14px; color: var(--slate-500); line-height: 1.65; flex: 1; margin-bottom: 16px; }
+    .blog-card-meta { font-size: 12px; color: var(--slate-400); display: flex; align-items: center; gap: 6px; }
+    .blog-card-meta .sep { opacity: .4; }
+    .blog-empty { text-align: center; padding: 80px 24px; color: var(--slate-400); }
+    .blog-loading { text-align: center; padding: 80px 24px; }
+    .blog-load-more { display: block; margin: 40px auto 0; }
+    .blog-cat-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--amber-100); color: var(--amber-700); }
+    @media(max-width: 600px) { .blog-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="../search.html">Find Parks</a></li>
+      <li><a href="../rv-reviews.html">RV Reviews</a></li>
+      <li><a href="../routes.html">Route Planner</a></li>
+      <li><a href="index.html" class="active">Blog</a></li>
+      <li><a href="../pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<section class="blog-hero">
+  <div class="blog-hero-inner container">
+    <h1>The RVSpot Blog</h1>
+    <p>Destination guides, RV tips, park spotlights, and gear reviews from the open road.</p>
+  </div>
+</section>
+
+<div class="blog-filters">
+  <div class="blog-filter-inner">
+    <button class="cat-btn active" data-cat="all">All Posts</button>
+    <button class="cat-btn" data-cat="Destination Guides">Destination Guides</button>
+    <button class="cat-btn" data-cat="Tips &amp; Advice">Tips &amp; Advice</button>
+    <button class="cat-btn" data-cat="Park Spotlights">Park Spotlights</button>
+    <button class="cat-btn" data-cat="Gear &amp; Planning">Gear &amp; Planning</button>
+  </div>
+</div>
+
+<main class="blog-main">
+  <div id="blogGrid" class="blog-grid">
+    <div class="blog-loading">
+      <div style="font-size:32px;margin-bottom:12px">⏳</div>
+      <p style="color:var(--slate-400)">Loading articles…</p>
+    </div>
+  </div>
+  <button id="loadMoreBtn" class="btn btn-secondary blog-load-more" style="display:none" onclick="loadMore()">Load more articles</button>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">RVSpot</div>
+        <p>The complete platform for RV travelers and park operators.</p>
+        <p style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.25)">Operated by Booking Bridge LLC dba RVSpot</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="../search.html">Find Parks</a></li><li><a href="../rv-reviews.html">RV Reviews</a></li><li><a href="../routes.html">Route Planner</a></li></ul></div>
+      <div class="footer-col"><h4>Resources</h4><ul><li><a href="index.html">Blog</a></li><li><a href="../pages/for-operators.html">For Operators</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="../pages/tos.html">Terms of Service</a></li><li><a href="../pages/privacy.html">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div></div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" placeholder="Your password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div><div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div></div><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot! 🏕','success');closeModal('signupModal')">Create free account</button></div></div></div>
+
+<script src="../js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL  = 'https://uydiifdgjzylfxxaoznv.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGlpZmRnanp5bGZ4eGFvem52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTMxNDMsImV4cCI6MjA5MDY2OTE0M30.McVsij-Z3m-rh9wjedwl5hM5fAaB5YDGYfHjsgxDfdE';
+const PAGE_SIZE = 12;
+
+let currentCat  = 'all';
+let currentPage = 0;
+let hasMore     = false;
+
+const EMOJI_MAP = {
+  'Destination Guides': '🗺️',
+  'Tips & Advice':      '💡',
+  'Park Spotlights':    '🏕',
+  'Gear & Planning':    '🔧',
+};
+
+// ── Category filter ───────────────────────────────────────────
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCat  = btn.dataset.cat;
+    currentPage = 0;
+    loadPosts(true);
+  });
+});
+
+// ── Load posts ────────────────────────────────────────────────
+async function loadPosts(reset = false) {
+  if (reset) {
+    document.getElementById('blogGrid').innerHTML = '<div class="blog-loading"><div style="font-size:32px;margin-bottom:12px">⏳</div><p style="color:var(--slate-400)">Loading articles…</p></div>';
+    document.getElementById('loadMoreBtn').style.display = 'none';
+  }
+
+  let sb;
+  try { sb = window.supabase.createClient(SB_URL, SB_KEY); }
+  catch (e) { renderError('Could not connect. Please refresh.'); return; }
+
+  let query = sb
+    .from('blog_posts')
+    .select('slug,title,excerpt,featured_image_url,category,published_at,reading_time_minutes')
+    .eq('is_published', true)
+    .order('published_at', { ascending: false })
+    .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);  // +1 to detect hasMore
+
+  if (currentCat !== 'all') query = query.eq('category', currentCat);
+
+  const { data, error } = await query;
+  if (error) { renderError(error.message); return; }
+
+  const posts = data || [];
+  hasMore = posts.length > PAGE_SIZE;
+  const toShow = posts.slice(0, PAGE_SIZE);
+
+  if (toShow.length === 0 && currentPage === 0) {
+    document.getElementById('blogGrid').innerHTML = '<div class="blog-empty"><div style="font-size:48px;margin-bottom:16px">📝</div><p>No articles yet in this category.</p></div>';
+    return;
+  }
+
+  const html = toShow.map(renderCard).join('');
+  if (reset) {
+    document.getElementById('blogGrid').innerHTML = html;
+  } else {
+    document.getElementById('blogGrid').insertAdjacentHTML('beforeend', html);
+  }
+  document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
+}
+
+function renderCard(p) {
+  const date = p.published_at
+    ? new Date(p.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
+  const imgStyle = p.featured_image_url
+    ? `style="background-image:url('${esc(p.featured_image_url)}')"`
+    : '';
+  const emoji = EMOJI_MAP[p.category] || '📝';
+  return `
+    <a href="/blog/${esc(p.slug)}" class="blog-card">
+      <div class="blog-card-img" ${imgStyle}>${p.featured_image_url ? '' : emoji}</div>
+      <div class="blog-card-body">
+        ${p.category ? `<span class="blog-card-cat">${esc(p.category)}</span>` : ''}
+        <div class="blog-card-title">${esc(p.title)}</div>
+        ${p.excerpt ? `<p class="blog-card-excerpt">${esc(p.excerpt)}</p>` : ''}
+        <div class="blog-card-meta">
+          <span>By Renato Bryant</span>
+          ${date ? `<span class="sep">·</span><time>${date}</time>` : ''}
+          ${p.reading_time_minutes ? `<span class="sep">·</span><span>${p.reading_time_minutes} min read</span>` : ''}
+        </div>
+      </div>
+    </a>`;
+}
+
+function loadMore() {
+  currentPage++;
+  loadPosts(false);
+}
+
+function renderError(msg) {
+  document.getElementById('blogGrid').innerHTML = `<div class="blog-empty"><div style="font-size:48px;margin-bottom:16px">⚠️</div><p style="color:#dc2626">${esc(msg)}</p></div>`;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+(function waitForSb(n) {
+  if (window.supabase) { loadPosts(true); return; }
+  if (n > 30) { renderError('Could not load Supabase. Please refresh.'); return; }
+  setTimeout(() => waitForSb(n + 1), 100);
+})(0);
+</script>
+</body>
+</html>

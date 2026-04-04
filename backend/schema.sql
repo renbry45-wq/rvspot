@@ -441,6 +441,42 @@ BEFORE UPDATE ON public.park_claims
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ────────────────────────────────────────────
+-- BLOG POSTS
+-- ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.blog_posts (
+  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  slug                 TEXT UNIQUE NOT NULL,
+  title                TEXT NOT NULL,
+  meta_description     TEXT,
+  content              TEXT,
+  excerpt              TEXT,
+  featured_image_url   TEXT,
+  author               TEXT NOT NULL DEFAULT 'Renato Bryant',
+  category             TEXT CHECK (category IN ('Destination Guides','Tips & Advice','Park Spotlights','Gear & Planning')),
+  published_at         TIMESTAMPTZ,
+  updated_at           TIMESTAMPTZ DEFAULT NOW(),
+  is_published         BOOLEAN NOT NULL DEFAULT FALSE,
+  reading_time_minutes INTEGER,
+  created_at           TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT excerpt_max_length CHECK (length(excerpt) <= 300)
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug      ON public.blog_posts (slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_category  ON public.blog_posts (category);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_published ON public.blog_posts (published_at DESC) WHERE is_published = TRUE;
+
+ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Published posts are publicly readable" ON public.blog_posts
+  FOR SELECT USING (is_published = TRUE);
+CREATE POLICY "Admin can manage blog posts" ON public.blog_posts
+  FOR ALL USING (auth.email() = 'renato@rvspot.net')
+  WITH CHECK (auth.email() = 'renato@rvspot.net');
+
+CREATE TRIGGER trg_blog_posts_updated_at
+BEFORE UPDATE ON public.blog_posts
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ────────────────────────────────────────────
 -- Insert 6 sample parks for testing
 INSERT INTO public.parks (name, slug, type, city, state, lat, lng, price_nightly, price_monthly, has_wifi, has_50amp, has_ev_charging, allows_long_stay, pets_allowed, avg_rating, review_count, plan, is_active, is_verified) VALUES
 ('Pineview Lake RV Resort', 'pineview-lake-rv-resort', 'resort', 'Austin', 'TX', 30.2672, -97.7431, 45.00, 650.00, TRUE, TRUE, FALSE, TRUE, TRUE, 4.8, 124, 'pro', TRUE, TRUE),

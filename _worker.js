@@ -62,6 +62,14 @@ export default {
       return handleRobots();
     }
 
+    // Blog post pages: /blog/:slug — serve dynamic HTML with SSR SEO
+    if (url.pathname.startsWith('/blog/')) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (parts.length === 2 && !parts[1].includes('.')) {
+        return handleBlogPostPage(parts[1], env);
+      }
+    }
+
     // Serve static assets for everything else
     return env.ASSETS.fetch(request);
   },
@@ -732,6 +740,240 @@ async function verifySignature(payload, sigHeader, secret) {
   return diff === 0;
 }
 
+/* ─── Blog post page (SSR for SEO) ─────────────────────────── */
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+const BLOG_STATE_NAMES = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
+
+async function handleBlogPostPage(slug, env) {
+  const safeSlug = slug.replace(/[^a-z0-9-]/gi, '').slice(0, 200);
+  if (!safeSlug) return new Response('Not Found', { status: 404 });
+
+  const postRes = await sbGet(env, `/rest/v1/blog_posts?slug=eq.${encodeURIComponent(safeSlug)}&is_published=eq.true&limit=1&select=*`);
+  if (!Array.isArray(postRes) || !postRes[0]) {
+    return new Response(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Post Not Found — RVSpot Blog</title><link rel="stylesheet" href="/css/styles.css"></head><body><nav class="nav"><div class="nav-inner"><a href="/" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a></div></nav><div class="container" style="padding:80px 24px;text-align:center"><div style="font-size:48px;margin-bottom:16px">📝</div><h1 style="font-size:2rem;margin-bottom:12px">Post not found</h1><p style="color:#4a5568;margin-bottom:24px">This article may have moved or been unpublished.</p><a href="/blog" class="btn btn-primary">Browse all articles</a></div></body></html>`, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+  const p = postRes[0];
+
+  // Detect first US state mentioned in content
+  const plainText = (p.content || '').replace(/<[^>]*>/g, ' ');
+  let mentionedState = null;
+  for (const s of BLOG_STATE_NAMES) {
+    const re = new RegExp(`\\b${s}\\b`, 'i');
+    if (re.test(plainText)) { mentionedState = s; break; }
+  }
+
+  // Related parks + related articles in parallel
+  const [relParks, relArticles] = await Promise.all([
+    mentionedState
+      ? sbGet(env, `/rest/v1/parks?state=eq.${encodeURIComponent(mentionedState)}&is_active=eq.true&select=id,name,city,state,slug,price_nightly,avg_rating,review_count&limit=3&order=avg_rating.desc`)
+      : Promise.resolve([]),
+    p.category
+      ? sbGet(env, `/rest/v1/blog_posts?category=eq.${encodeURIComponent(p.category)}&is_published=eq.true&id=neq.${p.id}&select=slug,title,excerpt,featured_image_url,published_at,reading_time_minutes,category&limit=3&order=published_at.desc`)
+      : Promise.resolve([]),
+  ]);
+
+  const pubDate  = p.published_at ? new Date(p.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  const pubISO   = p.published_at || p.created_at || '';
+  const updISO   = p.updated_at || pubISO;
+  const readTime = p.reading_time_minutes ? `${p.reading_time_minutes} min read` : '';
+
+  // Inject CTA box after 3rd </p>
+  const ctaState = mentionedState || '';
+  const ctaHref  = ctaState ? `/search?state=${encodeURIComponent(ctaState)}` : '/search';
+  const ctaLabel = ctaState ? `Browse ${ctaState} Parks →` : 'Browse RV Parks →';
+  const ctaTitle = ctaState ? `Planning an RV trip to ${ctaState}?` : 'Ready to find your next RV spot?';
+  const ctaBox   = `<div class="blog-cta-box"><strong>${escHtml(ctaTitle)}</strong><p>Browse parks on RVSpot — book directly, no commission.</p><a href="${ctaHref}" class="btn btn-primary btn-sm">${ctaLabel}</a></div>`;
+  let articleHtml = p.content || '<p>Content coming soon.</p>';
+  let pCount = 0;
+  articleHtml = articleHtml.replace(/<\/p>/g, m => { pCount++; return pCount === 3 ? `</p>${ctaBox}` : m; });
+  if (pCount < 3) articleHtml += ctaBox;
+
+  // Related parks HTML
+  let parksHtml = '';
+  if (mentionedState && Array.isArray(relParks) && relParks.length) {
+    const cards = relParks.map(pk => `
+      <a href="/park/${pk.slug}" class="bpc-card">
+        <div class="bpc-name">${escHtml(pk.name)}</div>
+        <div class="bpc-loc">${escHtml(pk.city)}, ${escHtml(pk.state)}</div>
+        <div class="bpc-foot">
+          ${pk.price_nightly ? `<span class="bpc-price">$${pk.price_nightly}/night</span>` : ''}
+          ${pk.avg_rating ? `<span class="bpc-rating">★ ${parseFloat(pk.avg_rating).toFixed(1)}</span>` : ''}
+        </div>
+      </a>`).join('');
+    parksHtml = `<section class="blog-related-parks container"><h2>RV Parks in ${escHtml(mentionedState)}</h2><p class="blog-section-sub">Parks near where this article takes you.</p><div class="bpc-grid">${cards}</div><div style="text-align:center;margin-top:24px"><a href="${ctaHref}" class="btn btn-secondary">View all ${escHtml(mentionedState)} parks →</a></div></section>`;
+  }
+
+  // Related articles HTML
+  let articlesHtml = '';
+  if (Array.isArray(relArticles) && relArticles.length) {
+    const cards = relArticles.map(a => {
+      const d = a.published_at ? new Date(a.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      const img = a.featured_image_url
+        ? `<div class="bcm-img" style="background-image:url('${escHtml(a.featured_image_url)}')"></div>`
+        : `<div class="bcm-img bcm-no-img">📝</div>`;
+      return `<a href="/blog/${a.slug}" class="bcm-card">${img}<div class="bcm-body"><span class="blog-cat-badge">${escHtml(a.category || '')}</span><div class="bcm-title">${escHtml(a.title)}</div><div class="bcm-meta">${d}${a.reading_time_minutes ? ` · ${a.reading_time_minutes} min` : ''}</div></div></a>`;
+    }).join('');
+    articlesHtml = `<section class="blog-related-articles container"><h2>More in ${escHtml(p.category || 'RV Life')}</h2><div class="bcm-grid">${cards}</div></section>`;
+  }
+
+  // Hero background
+  const heroBg = p.featured_image_url
+    ? `background-image:url('${escHtml(p.featured_image_url)}');background-size:cover;background-position:center`
+    : 'background:var(--green-900)';
+
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'Article',
+    headline: p.title, description: p.meta_description || p.excerpt || '',
+    image: p.featured_image_url || undefined,
+    author: { '@type': 'Person', name: p.author || 'Renato Bryant' },
+    publisher: { '@type': 'Organization', name: 'RVSpot', url: 'https://rvspot.net' },
+    datePublished: pubISO, dateModified: updISO,
+    url: `https://rvspot.net/blog/${p.slug}`,
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escHtml(p.title)} | RVSpot Blog</title>
+  <meta name="description" content="${escHtml(p.meta_description || p.excerpt || '')}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escHtml(p.title)}">
+  <meta property="og:description" content="${escHtml(p.meta_description || p.excerpt || '')}">
+  ${p.featured_image_url ? `<meta property="og:image" content="${escHtml(p.featured_image_url)}">` : ''}
+  <meta property="og:url" content="https://rvspot.net/blog/${p.slug}">
+  <meta property="og:site_name" content="RVSpot Blog">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escHtml(p.title)}">
+  <meta name="twitter:description" content="${escHtml(p.meta_description || p.excerpt || '')}">
+  ${p.featured_image_url ? `<meta name="twitter:image" content="${escHtml(p.featured_image_url)}">` : ''}
+  <link rel="canonical" href="https://rvspot.net/blog/${p.slug}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script type="application/ld+json">${jsonLd}</script>
+  <script src="/js/analytics.js"></script>
+  <style>
+    .blog-post-hero{height:380px;position:relative;display:flex;align-items:flex-end;${heroBg}}
+    .blog-post-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,.2) 60%,transparent 100%)}
+    .blog-post-hero-inner{position:relative;z-index:1;width:100%;max-width:760px;margin:0 auto;padding:0 24px 32px}
+    .blog-cat-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-300);color:var(--slate-900);margin-bottom:12px}
+    .blog-post-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:#fff;line-height:1.2;margin-bottom:16px}
+    .blog-post-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.75)}
+    .blog-post-meta .sep{opacity:.4}
+    .blog-article-wrap{max-width:760px;margin:0 auto;padding:48px 24px}
+    .blog-article-body{font-size:17px;line-height:1.85;color:var(--slate-700)}
+    .blog-article-body h2{font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--slate-900);margin:2em 0 .6em;padding-bottom:.4em;border-bottom:2px solid var(--cream-300)}
+    .blog-article-body h3{font-family:var(--font-display);font-size:1.25rem;font-weight:700;color:var(--slate-900);margin:1.6em 0 .5em}
+    .blog-article-body p{margin-bottom:1.4em}
+    .blog-article-body ul,.blog-article-body ol{margin:0 0 1.4em 1.5em}
+    .blog-article-body li{margin-bottom:.5em}
+    .blog-article-body blockquote{border-left:4px solid var(--green-400);margin:1.6em 0;padding:.8em 1.4em;background:var(--green-50);color:var(--slate-600);font-style:italic;border-radius:0 var(--radius-md) var(--radius-md) 0}
+    .blog-article-body img{width:100%;border-radius:var(--radius-lg);margin:1.6em 0;box-shadow:var(--shadow-md)}
+    .blog-article-body a{color:var(--green-700);text-decoration:underline}
+    .blog-article-body strong{color:var(--slate-900)}
+    .blog-cta-box{background:var(--green-800);color:#fff;border-radius:var(--radius-xl);padding:32px;margin:2.4em 0;text-align:center}
+    .blog-cta-box strong{font-size:1.1rem;display:block;margin-bottom:8px;color:#fff}
+    .blog-cta-box p{color:rgba(255,255,255,.8);font-size:15px;margin-bottom:16px}
+    .blog-cta-box .btn{background:var(--amber-300);color:var(--slate-900);font-weight:700}
+    .blog-cta-box .btn:hover{background:var(--amber-500)}
+    .blog-related-parks{padding:48px 24px;background:var(--cream-100);border-top:1px solid var(--cream-300)}
+    .blog-related-parks h2,.blog-related-articles h2{font-family:var(--font-display);font-size:1.5rem;margin-bottom:6px}
+    .blog-section-sub{color:var(--slate-400);font-size:14px;margin-bottom:24px}
+    .bpc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .bpc-card{background:var(--white);border:1px solid var(--cream-300);border-radius:var(--radius-lg);padding:20px;transition:all var(--transition);text-decoration:none;color:inherit}
+    .bpc-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+    .bpc-name{font-weight:700;font-size:15px;color:var(--slate-900);margin-bottom:4px}
+    .bpc-loc{font-size:13px;color:var(--slate-400);margin-bottom:12px}
+    .bpc-foot{display:flex;justify-content:space-between;font-size:13px}
+    .bpc-price{color:var(--green-700);font-weight:600}
+    .bpc-rating{color:var(--amber-700);font-weight:600}
+    .blog-related-articles{padding:48px 24px;border-top:1px solid var(--cream-300)}
+    .bcm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+    .bcm-card{text-decoration:none;color:inherit;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--cream-300);background:var(--white);transition:all var(--transition)}
+    .bcm-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+    .bcm-img{height:140px;background-size:cover;background-position:center;background-color:var(--green-100)}
+    .bcm-no-img{display:flex;align-items:center;justify-content:center;font-size:32px}
+    .bcm-body{padding:16px}
+    .bcm-title{font-weight:700;font-size:14px;color:var(--slate-900);margin:8px 0 4px;line-height:1.4}
+    .bcm-meta{font-size:12px;color:var(--slate-400)}
+    @media(max-width:600px){.blog-post-hero{height:260px}.blog-post-title{font-size:1.5rem}.blog-article-wrap{padding:32px 16px}}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="/search">Find Parks</a></li>
+      <li><a href="/rv-reviews.html">RV Reviews</a></li>
+      <li><a href="/routes.html">Route Planner</a></li>
+      <li><a href="/blog" class="active">Blog</a></li>
+      <li><a href="/pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<article>
+  <div class="blog-post-hero">
+    <div class="blog-post-hero-inner">
+      ${p.category ? `<div><span class="blog-cat-badge">${escHtml(p.category)}</span></div>` : ''}
+      <h1 class="blog-post-title">${escHtml(p.title)}</h1>
+      <div class="blog-post-meta">
+        <span>By <strong>${escHtml(p.author || 'Renato Bryant')}</strong>, RVSpot Founder</span>
+        ${pubDate ? `<span class="sep">·</span><time datetime="${pubISO}">${pubDate}</time>` : ''}
+        ${readTime ? `<span class="sep">·</span><span>${readTime}</span>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <div class="blog-article-wrap">
+    <div class="blog-article-body">
+      ${articleHtml}
+    </div>
+  </div>
+</article>
+
+${parksHtml}
+${articlesHtml}
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">RVSpot</div>
+        <p>The complete platform for RV travelers and park operators.</p>
+        <p style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.25)">Operated by Booking Bridge LLC dba RVSpot</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="/search">Find Parks</a></li><li><a href="/rv-reviews.html">RV Reviews</a></li><li><a href="/routes.html">Route Planner</a></li></ul></div>
+      <div class="footer-col"><h4>Resources</h4><ul><li><a href="/blog">Blog</a></li><li><a href="/pages/for-operators.html">For Operators</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="/pages/tos.html">Terms of Service</a></li><li><a href="/pages/privacy.html">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div></div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" placeholder="Your password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div><div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div></div><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot! 🏕','success');closeModal('signupModal')">Create free account</button></div></div></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600' },
+  });
+}
+
 /* ─── Sitemap ───────────────────────────────────────────────── */
 
 const US_STATES = [
@@ -769,7 +1011,7 @@ async function handleSitemap(env) {
   // Fetch active parks and published blog posts in parallel
   const [parks, posts] = await Promise.all([
     sbGet(env, '/rest/v1/parks?select=slug,updated_at&stripe_connect_status=eq.active&slug=not.is.null'),
-    sbGet(env, '/rest/v1/blog_posts?select=slug,updated_at&status=eq.published&slug=not.is.null'),
+    sbGet(env, '/rest/v1/blog_posts?select=slug,updated_at&is_published=eq.true&slug=not.is.null'),
   ]);
 
   const urls = [];

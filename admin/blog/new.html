@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Post — RVSpot Blog Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css">
+  <style>
+    body { background: var(--cream-100); }
+    #accessDenied { display: none; text-align: center; padding: 80px 24px; }
+    #editorWrap { display: none; max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+    .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+    .editor-header h1 { font-size: 1.4rem; margin: 0; }
+    .editor-actions { display: flex; gap: 10px; align-items: center; }
+    .editor-grid { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
+    .editor-main { background: var(--white); border-radius: var(--radius-xl); border: 1px solid var(--cream-300); padding: 28px; }
+    .editor-sidebar { display: flex; flex-direction: column; gap: 16px; }
+    .sidebar-card { background: var(--white); border-radius: var(--radius-xl); border: 1px solid var(--cream-300); padding: 20px; }
+    .sidebar-card h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--slate-400); margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
+    .form-hint { font-size: 11px; color: var(--slate-400); margin-top: 4px; }
+    #titleInput { font-size: 1.4rem; font-weight: 700; font-family: var(--font-display); border: none; border-bottom: 2px solid var(--cream-300); border-radius: 0; padding: 8px 0; margin-bottom: 8px; width: 100%; }
+    #titleInput:focus { border-bottom-color: var(--green-600); }
+    #slugInput { font-size: 13px; font-family: monospace; }
+    .quill-wrap { margin-bottom: 0; }
+    #quillEditor { height: 480px; font-size: 16px; font-family: var(--font-body); }
+    .ql-toolbar { border-radius: var(--radius-md) var(--radius-md) 0 0 !important; border-color: var(--slate-200) !important; }
+    .ql-container { border-radius: 0 0 var(--radius-md) var(--radius-md) !important; border-color: var(--slate-200) !important; font-family: var(--font-body) !important; font-size: 16px !important; }
+    .ql-editor { min-height: 480px; line-height: 1.8; }
+    .publish-toggle { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+    .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; inset: 0; background: var(--slate-200); border-radius: 24px; cursor: pointer; transition: background var(--transition); }
+    .toggle-track::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: var(--white); border-radius: 50%; transition: transform var(--transition); }
+    .toggle-switch input:checked + .toggle-track { background: var(--green-600); }
+    .toggle-switch input:checked + .toggle-track::before { transform: translateX(20px); }
+    .toggle-label { font-size: 14px; font-weight: 600; color: var(--slate-700); }
+    .char-count { font-size: 11px; color: var(--slate-400); text-align: right; margin-top: 4px; }
+    .char-count.over { color: #dc2626; }
+    .preview-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; padding: 40px 24px; }
+    .preview-inner { max-width: 760px; margin: 0 auto; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; }
+    .preview-header { background: var(--slate-800); color: var(--white); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+    .preview-content { padding: 32px; }
+    .preview-content h1 { font-family: var(--font-display); font-size: 2rem; margin-bottom: 12px; }
+    .preview-content .preview-meta { font-size: 13px; color: var(--slate-400); margin-bottom: 24px; }
+    .preview-content .preview-body { font-size: 16px; line-height: 1.8; color: var(--slate-700); }
+    .preview-content .preview-body h2 { font-family: var(--font-display); font-size: 1.4rem; margin: 1.8em 0 .5em; border-bottom: 2px solid var(--cream-300); padding-bottom: .4em; }
+    .preview-content .preview-body h3 { font-family: var(--font-display); font-size: 1.15rem; margin: 1.4em 0 .4em; }
+    .preview-content .preview-body p { margin-bottom: 1.2em; }
+    .preview-content .preview-body ul, .preview-content .preview-body ol { margin: 0 0 1.2em 1.5em; }
+    .preview-content .preview-body blockquote { border-left: 4px solid var(--green-400); padding: .8em 1.2em; background: var(--green-50); margin: 1.4em 0; font-style: italic; color: var(--slate-600); }
+    .reading-time-display { background: var(--green-50); border: 1px solid var(--green-200); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--green-700); font-weight: 600; display: none; }
+    @media(max-width: 768px) { .editor-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../../index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot <span style="font-size:11px;background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:700">ADMIN</span></a>
+    <ul class="nav-links">
+      <li><a href="../claims.html">Claims</a></li>
+      <li><a href="new.html" style="color:var(--green-400)">New Post</a></li>
+    </ul>
+    <div class="nav-actions" id="adminUserInfo" style="font-size:13px;color:rgba(255,255,255,0.6)"></div>
+  </div>
+</nav>
+
+<div id="accessDenied">
+  <div style="font-size:48px;margin-bottom:16px">🔒</div>
+  <h2 style="margin-bottom:8px">Access denied</h2>
+  <p style="color:var(--slate-500)">This page is only accessible to RVSpot admins.</p>
+  <a href="../../index.html" class="btn btn-primary" style="margin-top:16px">Go home</a>
+</div>
+
+<div id="editorWrap">
+  <div class="editor-header">
+    <h1>New Blog Post</h1>
+    <div class="editor-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openPreview()">Preview</button>
+      <button class="btn btn-secondary btn-sm" id="saveDraftBtn" onclick="savePost(false)">Save draft</button>
+      <button class="btn btn-primary btn-sm" id="publishBtn" onclick="savePost(true)">Publish</button>
+    </div>
+  </div>
+
+  <div class="editor-grid">
+    <!-- Main content -->
+    <div class="editor-main">
+      <div class="form-group">
+        <input type="text" id="titleInput" placeholder="Post title…" oninput="onTitleInput(this.value)">
+      </div>
+      <div class="form-group" style="margin-bottom:24px">
+        <label class="form-label">Slug (URL)</label>
+        <input type="text" id="slugInput" placeholder="auto-generated-from-title">
+        <div class="form-hint">rvspot.net/blog/<span id="slugPreview" style="color:var(--green-700)">your-slug-here</span></div>
+      </div>
+      <div class="quill-wrap">
+        <label class="form-label" style="margin-bottom:8px">Content</label>
+        <div id="quillEditor"></div>
+      </div>
+      <div id="readingTimeDisplay" class="reading-time-display" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="editor-sidebar">
+      <div class="sidebar-card">
+        <h3>Publish</h3>
+        <div class="publish-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="publishedToggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span class="toggle-label" id="publishLabel">Draft</span>
+        </div>
+        <div id="publishedAtGroup" style="display:none" class="form-group">
+          <label class="form-label">Published date</label>
+          <input type="datetime-local" id="publishedAt">
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <h3>Details</h3>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="categorySelect">
+            <option value="">Select category…</option>
+            <option>Destination Guides</option>
+            <option>Tips &amp; Advice</option>
+            <option>Park Spotlights</option>
+            <option>Gear &amp; Planning</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Author</label>
+          <input type="text" id="authorInput" value="Renato Bryant">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reading time (minutes)</label>
+          <input type="number" id="readingTimeInput" min="1" max="60" placeholder="Auto-calculated">
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <h3>SEO</h3>
+        <div class="form-group">
+          <label class="form-label">Excerpt (shown in cards &amp; meta)</label>
+          <textarea id="excerptInput" rows="3" placeholder="A short 1–2 sentence description…" oninput="updateCharCount(this, 300)"></textarea>
+          <div class="char-count" id="excerptCount">0 / 300</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Meta description</label>
+          <textarea id="metaDescInput" rows="2" placeholder="Override meta description (optional)…" oninput="updateCharCount(this, 160)"></textarea>
+          <div class="char-count" id="metaDescCount">0 / 160</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Featured image URL</label>
+          <input type="url" id="featuredImageInput" placeholder="https://…">
+          <div id="imgPreview" style="display:none;margin-top:8px;border-radius:var(--radius-md);overflow:hidden;height:120px;background-size:cover;background-position:center"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview overlay -->
+<div class="preview-wrap" id="previewWrap" onclick="closePreview(e)">
+  <div class="preview-inner" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span>Preview</span>
+      <button onclick="closePreview()" style="color:rgba(255,255,255,.7);font-size:20px;background:none;border:none;cursor:pointer">✕</button>
+    </div>
+    <div class="preview-content">
+      <div id="previewCat" style="margin-bottom:12px"></div>
+      <h1 id="previewTitle"></h1>
+      <div class="preview-meta" id="previewMeta"></div>
+      <div class="preview-body" id="previewBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+const ADMIN_EMAIL   = 'renato@rvspot.net';
+const SUPABASE_URL  = 'https://uydiifdgjzylfxxaoznv.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGlpZmRnanp5bGZ4eGFvem52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTMxNDMsImV4cCI6MjA5MDY2OTE0M30.McVsij-Z3m-rh9wjedwl5hM5fAaB5YDGYfHjsgxDfdE';
+
+let sb, quill;
+let editingId = null;  // for future edit mode
+
+// ── Auth guard ────────────────────────────────────────────────
+function waitForSb(cb, n = 0) {
+  if (window.supabase) return cb();
+  if (n > 30) return;
+  setTimeout(() => waitForSb(cb, n + 1), 100);
+}
+
+waitForSb(async () => {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user || user.email !== ADMIN_EMAIL) {
+    document.getElementById('accessDenied').style.display = '';
+    return;
+  }
+  document.getElementById('adminUserInfo').textContent = user.email;
+  document.getElementById('editorWrap').style.display = '';
+  initEditor();
+});
+
+// ── Quill init ────────────────────────────────────────────────
+function initEditor() {
+  quill = new Quill('#quillEditor', {
+    theme: 'snow',
+    placeholder: 'Start writing your article…',
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        ['blockquote', 'code-block'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'image'],
+        ['clean'],
+      ],
+    },
+  });
+
+  quill.on('text-change', () => {
+    const text = quill.getText();
+    const wc   = text.trim().split(/\s+/).filter(Boolean).length;
+    const mins = Math.max(1, Math.round(wc / 238));  // avg 238 wpm
+    document.getElementById('readingTimeInput').placeholder = `${mins} min (auto)`;
+    const rt = document.getElementById('readingTimeDisplay');
+    rt.style.display = wc > 10 ? 'block' : 'none';
+    rt.textContent   = `~${mins} min read · ${wc} words`;
+  });
+}
+
+// ── Title → slug ──────────────────────────────────────────────
+function onTitleInput(val) {
+  const slug = slugify(val);
+  document.getElementById('slugInput').value = slug;
+  document.getElementById('slugPreview').textContent = slug || 'your-slug-here';
+}
+
+function slugify(s) {
+  return s.toLowerCase().replace(/['']/g,'').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0, 100);
+}
+
+// ── Publish toggle ────────────────────────────────────────────
+document.getElementById('publishedToggle').addEventListener('change', function () {
+  document.getElementById('publishLabel').textContent = this.checked ? 'Published' : 'Draft';
+  document.getElementById('publishedAtGroup').style.display = this.checked ? '' : 'none';
+  if (this.checked && !document.getElementById('publishedAt').value) {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('publishedAt').value = now.toISOString().slice(0, 16);
+  }
+});
+
+// ── Featured image preview ────────────────────────────────────
+document.getElementById('featuredImageInput').addEventListener('input', function () {
+  const preview = document.getElementById('imgPreview');
+  if (this.value) {
+    preview.style.display  = 'block';
+    preview.style.backgroundImage = `url('${this.value}')`;
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+// ── Char counters ─────────────────────────────────────────────
+function updateCharCount(el, max) {
+  const len   = el.value.length;
+  const counter = document.getElementById(el.id.replace('Input','') + 'Count') ||
+                  el.closest('.form-group').querySelector('.char-count');
+  if (!counter) return;
+  counter.textContent = `${len} / ${max}`;
+  counter.classList.toggle('over', len > max);
+}
+
+// ── Save post ─────────────────────────────────────────────────
+async function savePost(publish) {
+  const title    = document.getElementById('titleInput').value.trim();
+  const slug     = document.getElementById('slugInput').value.trim();
+  const category = document.getElementById('categorySelect').value;
+  const author   = document.getElementById('authorInput').value.trim() || 'Renato Bryant';
+  const excerpt  = document.getElementById('excerptInput').value.trim();
+  const metaDesc = document.getElementById('metaDescInput').value.trim();
+  const featImg  = document.getElementById('featuredImageInput').value.trim();
+  const readTime = parseInt(document.getElementById('readingTimeInput').value) || null;
+  const pubAt    = document.getElementById('publishedAt').value;
+  const content  = quill ? quill.root.innerHTML : '';
+
+  if (!title) { showToast('Title is required', 'error'); return; }
+  if (!slug)  { showToast('Slug is required', 'error');  return; }
+  if (!content || content === '<p><br></p>') { showToast('Content is required', 'error'); return; }
+  if (excerpt.length > 300) { showToast('Excerpt must be 300 chars or fewer', 'error'); return; }
+
+  const btn = publish ? document.getElementById('publishBtn') : document.getElementById('saveDraftBtn');
+  btn.disabled = true;
+  btn.textContent = publish ? 'Publishing…' : 'Saving…';
+
+  const record = {
+    title, slug, category: category || null,
+    author, excerpt: excerpt || null,
+    meta_description: metaDesc || null,
+    featured_image_url: featImg || null,
+    reading_time_minutes: readTime || estimateReadingTime(),
+    content,
+    is_published: publish,
+    published_at: publish ? (pubAt ? new Date(pubAt).toISOString() : new Date().toISOString()) : null,
+  };
+
+  const { data, error } = editingId
+    ? await sb.from('blog_posts').update(record).eq('id', editingId).select().single()
+    : await sb.from('blog_posts').insert(record).select().single();
+
+  btn.disabled = false;
+  btn.textContent = publish ? 'Publish' : 'Save draft';
+
+  if (error) {
+    showToast('Error: ' + error.message, 'error');
+    return;
+  }
+
+  editingId = data.id;
+  showToast(publish ? 'Post published! 🎉' : 'Draft saved.', 'success');
+
+  if (publish) {
+    setTimeout(() => { window.location.href = `/blog/${data.slug}`; }, 1200);
+  }
+}
+
+function estimateReadingTime() {
+  if (!quill) return null;
+  const wc = quill.getText().trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(wc / 238));
+}
+
+// ── Preview ───────────────────────────────────────────────────
+function openPreview() {
+  const title    = document.getElementById('titleInput').value || '(No title)';
+  const category = document.getElementById('categorySelect').value;
+  const author   = document.getElementById('authorInput').value || 'Renato Bryant';
+  const content  = quill ? quill.root.innerHTML : '';
+  const rt       = estimateReadingTime();
+
+  document.getElementById('previewCat').innerHTML = category
+    ? `<span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-100);color:var(--amber-700)">${esc(category)}</span>`
+    : '';
+  document.getElementById('previewTitle').textContent = title;
+  document.getElementById('previewMeta').innerHTML =
+    `By <strong>${esc(author)}</strong>, RVSpot Founder · ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}${rt ? ` · ${rt} min read` : ''}`;
+  document.getElementById('previewBody').innerHTML = content || '<p>(No content)</p>';
+  document.getElementById('previewWrap').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview() {
+  document.getElementById('previewWrap').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('previewWrap').addEventListener('click', function (e) {
+  if (e.target === this) closePreview();
+});
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
