@@ -232,12 +232,7 @@
       <div class="form-group"><label class="form-label">Your name</label><input type="text" placeholder="Jane Smith"></div>
       <div class="form-group"><label class="form-label">Park email address</label><input type="email" placeholder="manager@yourpark.com"><div class="form-hint">We'll send a verification link to this address to confirm ownership.</div></div>
       <div class="form-group"><label class="form-label">Phone (optional)</label><input type="tel" placeholder="(555) 000-0000"></div>
-      <button class="btn btn-primary w-full" onclick="
-        var stateVal = document.querySelector('#claimModal input[placeholder=\'Texas\']')?.value?.trim() || '';
-        if (window.gtag) gtag('event', 'park_registered', { park_state: stateVal, tier: 'basic' });
-        showToast('Verification email sent! Check your inbox to complete listing setup.','success');
-        closeModal('claimModal');
-      ">Send verification email</button>
+      <button class="btn btn-primary w-full" onclick="showToast('Verification email sent! Check your inbox to complete listing setup.','success');closeModal('claimModal')">Send verification email</button>
       <p class="text-center mt-8 text-sm text-muted">Free to list. No credit card required.</p>
     </div>
   </div>

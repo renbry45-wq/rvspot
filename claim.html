@@ -337,6 +337,15 @@ async function submitClaim() {
   // Also mark park as pending_claim in parks table
   await sb.from('parks').update({ listing_status: 'pending_claim' }).eq('id', claimPark.id);
 
+  // GA4 — Event E: park_registered fires here, after the park record is confirmed
+  // in Supabase (not on button click) so only real completed registrations are counted.
+  if (window.gtag) {
+    gtag('event', 'park_registered', {
+      park_state: claimPark.state || '',
+      tier:       'basic',
+    });
+  }
+
   goStep(4);
   showToast('Claim submitted! Proceeding to profile setup.', 'success');
 }
