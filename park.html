@@ -83,6 +83,18 @@
   </div>
 </div>
 
+<!-- Unclaimed listing banner (hidden by default; shown via JS when is_claimed=false) -->
+<div id="unclaimedBanner" style="display:none;background:#fef9c3;border-bottom:2px solid #eab308;padding:14px 0">
+  <div class="container" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span style="font-size:20px">⚠️</span>
+    <div style="flex:1;min-width:220px">
+      <strong style="color:#713f12;font-size:14px">Unclaimed listing</strong>
+      <span style="color:#713f12;font-size:14px"> — This listing was created from public information. Are you the owner? Claim this listing to manage it, add photos, and start accepting bookings.</span>
+    </div>
+    <a id="claimListingBtn" href="#" class="btn btn-sm" style="background:#713f12;color:#fff;border:none;white-space:nowrap">Claim this listing →</a>
+  </div>
+</div>
+
 <!-- Breadcrumb -->
 <div style="background:var(--white);border-bottom:1px solid var(--cream-300);padding:12px 0">
   <div class="container">
@@ -286,8 +298,18 @@
 
     <!-- Booking sidebar -->
     <div>
-      <div class="booking-card">
-        <div class="booking-price-row">
+      <!-- Unclaimed park contact card (shown instead of booking widget) -->
+      <div id="unclaimedSidebar" style="display:none;background:var(--white);border:1px solid var(--cream-300);border-radius:var(--radius-xl);padding:24px;margin-bottom:16px">
+        <div style="font-size:18px;font-weight:700;color:var(--slate-900);margin-bottom:8px">Want to book here?</div>
+        <div style="font-size:14px;color:var(--slate-500);margin-bottom:16px;line-height:1.6">This park hasn't joined RVSpot yet. Contact them directly to check availability and rates.</div>
+        <div id="unclaimedPhone" style="display:none;background:var(--cream-100);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:12px;font-size:15px;font-weight:600;color:var(--green-700)"></div>
+        <div id="unclaimedWebsite" style="display:none;margin-bottom:12px"></div>
+        <a id="unclaimedClaimLink" href="#" class="btn btn-primary w-full" style="text-align:center;display:block">Claim &amp; manage this listing</a>
+        <p style="font-size:12px;color:var(--slate-400);text-align:center;margin-top:8px">Are you the park owner? Claim for free.</p>
+      </div>
+
+      <div class="booking-card" id="bookingCard">
+        <div class="booking-price-row" id="bookingPriceRow">
           <span class="booking-price" id="bookPrice">$45</span>
           <span class="booking-price-unit">/night</span>
         </div>
@@ -438,12 +460,12 @@ async function loadPark() {
     try {
       const { data, error } = await window._sb
         .from('parks')
-        .select('id,name,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,stripe_connect_status,phone')
+        .select('id,name,slug,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,stripe_connect_status,phone,website,is_claimed,listing_status,data_source')
         .eq('id', rawParkId)
         .single();
       if (!error && data) {
         populatePark({
-          id: data.id, name: data.name, city: data.city, state: data.state,
+          id: data.id, name: data.name, slug: data.slug, city: data.city, state: data.state,
           price: data.price_nightly || 0, monthly: data.price_monthly || 0,
           wifi: data.has_wifi, longstay: data.allows_long_stay,
           pets: data.pets_allowed, ev: data.has_ev_charging,
@@ -451,6 +473,9 @@ async function loadPark() {
           reviews: data.review_count || 0,
           connectStatus: data.stripe_connect_status || 'not_started',
           phone: data.phone || null,
+          website: data.website || null,
+          isClaimed: data.is_claimed !== false,
+          listingStatus: data.listing_status || 'active',
         });
         return;
       }
@@ -501,7 +526,32 @@ function updateBooking() {
 }
 
 function renderBookingState() {
-  const isActive = park.connectStatus === 'active';
+  const isClaimed   = park.isClaimed !== false; // default true for operator parks
+  const isUnclaimed = !isClaimed;
+  const isActive    = !isUnclaimed && park.connectStatus === 'active';
+  const claimUrl    = `claim.html?slug=${encodeURIComponent(park.slug || park.id)}`;
+
+  // Unclaimed banner & sidebar
+  document.getElementById('unclaimedBanner').style.display   = isUnclaimed ? '' : 'none';
+  document.getElementById('unclaimedSidebar').style.display  = isUnclaimed ? '' : 'none';
+  document.getElementById('bookingCard').style.display        = isUnclaimed ? 'none' : '';
+  if (isUnclaimed) {
+    document.getElementById('claimListingBtn').href    = claimUrl;
+    document.getElementById('unclaimedClaimLink').href = claimUrl;
+    if (park.phone) {
+      const ph = document.getElementById('unclaimedPhone');
+      ph.textContent   = `📞 ${park.phone}`;
+      ph.style.display = '';
+    }
+    if (park.website) {
+      const wb = document.getElementById('unclaimedWebsite');
+      wb.innerHTML     = `<a href="${park.website}" target="_blank" rel="noopener" style="font-size:14px;color:var(--green-700)">🌐 ${park.website}</a>`;
+      wb.style.display = '';
+    }
+    return;
+  }
+
+  // Claimed park — show/hide booking button based on Connect status
   document.getElementById('bookingAction').style.display      = isActive ? '' : 'none';
   document.getElementById('bookingUnavailable').style.display = isActive ? 'none' : '';
   if (!isActive && park.phone) {

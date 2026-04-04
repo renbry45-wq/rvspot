@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claim Your Park Listing — RVSpot</title>
+  <meta name="description" content="Claim your RV park listing on RVSpot. Manage your profile, add photos, and start accepting bookings.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/analytics.js"></script>
+  <style>
+    body { background: var(--cream-100); }
+    .claim-wrap { max-width: 580px; margin: 0 auto; padding: 48px 24px 80px; }
+    .claim-steps { display: flex; gap: 0; margin-bottom: 40px; }
+    .claim-step { flex: 1; text-align: center; position: relative; }
+    .claim-step:not(:last-child)::after { content: ''; position: absolute; top: 16px; left: 50%; right: -50%; height: 2px; background: var(--cream-300); z-index: 0; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--cream-300); color: var(--slate-400); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; position: relative; z-index: 1; }
+    .step-dot.active { background: var(--green-700); color: #fff; }
+    .step-dot.done { background: var(--green-500); color: #fff; }
+    .step-label { font-size: 11px; color: var(--slate-400); font-weight: 600; }
+    .step-label.active { color: var(--green-700); }
+    .claim-card { background: var(--white); border-radius: var(--radius-xl); border: 1px solid var(--cream-300); padding: 32px; }
+    .claim-park-name { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--slate-900); margin-bottom: 4px; }
+    .claim-park-loc { font-size: 14px; color: var(--slate-400); margin-bottom: 24px; }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+    .attestation-box { background: var(--green-50); border: 1.5px solid var(--green-300); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start; }
+    .attestation-box input[type=checkbox] { margin-top: 2px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--green-700); }
+    .success-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--green-100); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<div class="claim-wrap">
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green-700);margin-bottom:8px">Park Claim</div>
+    <h1 style="font-size:1.8rem;margin-bottom:8px">Claim your listing</h1>
+    <p style="color:var(--slate-500);font-size:15px">Take ownership of your park profile in minutes. It's free.</p>
+  </div>
+
+  <!-- Step progress -->
+  <div class="claim-steps" id="claimSteps">
+    <div class="claim-step">
+      <div class="step-dot active" id="dot1">1</div>
+      <div class="step-label active" id="lbl1">Confirm</div>
+    </div>
+    <div class="claim-step">
+      <div class="step-dot" id="dot2">2</div>
+      <div class="step-label" id="lbl2">Sign in</div>
+    </div>
+    <div class="claim-step">
+      <div class="step-dot" id="dot3">3</div>
+      <div class="step-label" id="lbl3">Verify</div>
+    </div>
+    <div class="claim-step">
+      <div class="step-dot" id="dot4">4</div>
+      <div class="step-label" id="lbl4">Profile</div>
+    </div>
+    <div class="claim-step">
+      <div class="step-dot" id="dot5">5</div>
+      <div class="step-label" id="lbl5">Payments</div>
+    </div>
+  </div>
+
+  <div class="claim-card">
+    <div class="claim-park-name" id="claimParkName">Loading…</div>
+    <div class="claim-park-loc"  id="claimParkLoc"></div>
+
+    <!-- Step 1: Confirm ownership intent -->
+    <div class="step-panel active" id="step1">
+      <h2 style="font-size:1.1rem;margin-bottom:8px">Are you the owner or manager of this park?</h2>
+      <p style="font-size:14px;color:var(--slate-500);margin-bottom:20px;line-height:1.6">
+        Only the authorized owner or manager of <strong id="claimParkName2"></strong> can claim this listing. Claiming gives you full control of the profile, photos, rates, and booking settings.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary w-full btn-lg" onclick="goStep(2)">Yes, I'm the owner / manager →</button>
+        <a href="search.html" class="btn btn-secondary w-full" style="text-align:center">No, go back to search</a>
+      </div>
+    </div>
+
+    <!-- Step 2: Sign in / create account -->
+    <div class="step-panel" id="step2">
+      <h2 style="font-size:1.1rem;margin-bottom:8px">Create an account or sign in</h2>
+      <p style="font-size:14px;color:var(--slate-500);margin-bottom:20px;line-height:1.6">You'll need a free RVSpot account to manage your listing.</p>
+
+      <div id="authPanel">
+        <div id="authFormLogin">
+          <div class="form-group"><label class="form-label">Email</label><input type="email" id="claimEmail" placeholder="manager@yourpark.com"></div>
+          <div class="form-group"><label class="form-label">Password</label><input type="password" id="claimPassword" placeholder="Your password"></div>
+          <button class="btn btn-primary w-full" onclick="claimSignIn()">Sign in →</button>
+          <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--slate-500)">
+            Don't have an account? <a href="#" onclick="toggleAuthMode(); return false;" style="color:var(--green-700);font-weight:600">Create one free</a>
+          </p>
+        </div>
+        <div id="authFormSignup" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="form-group"><label class="form-label">First name</label><input type="text" id="claimFirstName" placeholder="Jane"></div>
+            <div class="form-group"><label class="form-label">Last name</label><input type="text" id="claimLastName" placeholder="Smith"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Email</label><input type="email" id="claimSignupEmail" placeholder="manager@yourpark.com"></div>
+          <div class="form-group"><label class="form-label">Password</label><input type="password" id="claimSignupPassword" placeholder="Choose a password"></div>
+          <button class="btn btn-primary w-full" onclick="claimSignUp()">Create account →</button>
+          <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--slate-500)">
+            Already have an account? <a href="#" onclick="toggleAuthMode(); return false;" style="color:var(--green-700);font-weight:600">Sign in</a>
+          </p>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="goStep(1)">← Back</button>
+    </div>
+
+    <!-- Step 3: Ownership attestation -->
+    <div class="step-panel" id="step3">
+      <h2 style="font-size:1.1rem;margin-bottom:8px">Verify ownership</h2>
+      <p style="font-size:14px;color:var(--slate-500);margin-bottom:20px;line-height:1.6">
+        We verify claims manually within 1–2 business days. Please confirm your authorization below.
+      </p>
+      <div class="attestation-box">
+        <input type="checkbox" id="attestationCheck" onchange="document.getElementById('attesteBtn').disabled = !this.checked">
+        <label for="attestationCheck" style="font-size:14px;color:var(--slate-700);line-height:1.6;cursor:pointer">
+          I confirm that I am authorized to manage this RV park listing and that the information I provide is accurate. I understand that RVSpot will verify my claim before granting full access.
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes for our team (optional)</label>
+        <textarea id="claimNotes" rows="3" placeholder="e.g. I'm the owner since 2019, our park website is…" style="resize:vertical"></textarea>
+      </div>
+      <button class="btn btn-primary w-full" id="attesteBtn" disabled onclick="submitClaim()">Submit claim for review →</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="goStep(2)">← Back</button>
+    </div>
+
+    <!-- Step 4: Pre-filled profile form -->
+    <div class="step-panel" id="step4">
+      <h2 style="font-size:1.1rem;margin-bottom:8px">Complete your park profile</h2>
+      <p style="font-size:14px;color:var(--slate-500);margin-bottom:20px;line-height:1.6">
+        We've pre-filled what we know. Review and add any missing details — your profile goes live once your claim is approved.
+      </p>
+      <div class="form-group"><label class="form-label">Park name</label><input type="text" id="profileName"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">City</label><input type="text" id="profileCity"></div>
+        <div class="form-group"><label class="form-label">State</label><input type="text" id="profileState"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Phone</label><input type="tel" id="profilePhone" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label class="form-label">Website</label><input type="url" id="profileWebsite" placeholder="https://yourpark.com"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea id="profileDesc" rows="4" placeholder="Tell guests what makes your park special…" style="resize:vertical"></textarea></div>
+      <div class="form-group">
+        <label class="form-label">Nightly rate</label>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--slate-500)">$</span><input type="number" id="profileNightly" min="0" step="1" placeholder="45"></div>
+      </div>
+      <button class="btn btn-primary w-full" onclick="saveProfile()">Save profile & continue →</button>
+      <p style="font-size:12px;color:var(--slate-400);text-align:center;margin-top:8px">You can update these details any time from your dashboard.</p>
+    </div>
+
+    <!-- Step 5: Connect Stripe -->
+    <div class="step-panel" id="step5">
+      <h2 style="font-size:1.1rem;margin-bottom:8px">Connect your bank to accept bookings</h2>
+      <p style="font-size:14px;color:var(--slate-500);margin-bottom:20px;line-height:1.6">
+        Once your claim is approved, you'll need to connect a bank account via Stripe to start accepting online payments. Guests pay securely through RVSpot — funds deposit directly to you.
+      </p>
+      <div style="background:var(--cream-100);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--slate-700);margin-bottom:8px">What happens next</div>
+        <div style="font-size:13px;color:var(--slate-600);line-height:1.8">
+          1. We review your claim (1–2 business days)<br>
+          2. You receive an approval email<br>
+          3. Connect your bank → park goes live<br>
+          4. Guests can book instantly
+        </div>
+      </div>
+      <button class="btn btn-primary w-full btn-lg" id="connectStripeBtn" onclick="startStripeConnect()">Connect bank account →</button>
+      <button class="btn btn-ghost w-full" style="margin-top:10px" onclick="skipStripe()">Skip for now — connect after approval</button>
+    </div>
+
+    <!-- Step 6: Success -->
+    <div class="step-panel" id="step6">
+      <div style="text-align:center;padding:16px 0">
+        <div class="success-icon">✅</div>
+        <h2 style="font-size:1.4rem;margin-bottom:12px">Claim submitted!</h2>
+        <p style="font-size:15px;color:var(--slate-500);line-height:1.7;margin-bottom:24px">
+          We'll review your claim within 1–2 business days. You'll receive an email at <strong id="claimSubmittedEmail"></strong> once it's approved.
+        </p>
+        <a href="pages/operator-dashboard.html" class="btn btn-primary btn-lg">Go to your dashboard →</a>
+        <p style="margin-top:12px;font-size:13px;color:var(--slate-400)">Questions? <a href="mailto:support@rvspot.net" style="color:var(--green-700)">support@rvspot.net</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Create account</button></div></div></div>
+
+<script src="js/app.js"></script>
+<script>
+const params   = new URLSearchParams(location.search);
+const parkSlug = params.get('slug');
+let claimPark  = null;
+let claimUserId = null;
+let claimEmail  = '';
+let currentStep = 1;
+
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 20) return cb();
+  setTimeout(() => waitForSb(cb, attempts + 1), 100);
+}
+
+// ── Load park by slug or UUID ─────────────────────────────────────────────────
+async function loadPark() {
+  if (!parkSlug) { showParkName('Unknown Park', ''); return; }
+  waitForSb(async () => {
+    if (!window._sb) { showParkName(parkSlug, ''); return; }
+    try {
+      const isUUID = /^[0-9a-f-]{36}$/i.test(parkSlug);
+      const query  = window._sb.from('parks')
+        .select('id,name,city,state,phone,website,price_nightly,is_claimed,listing_status,data_source');
+      const { data } = isUUID
+        ? await query.eq('id', parkSlug).single()
+        : await query.eq('slug', parkSlug).single();
+      if (data) {
+        claimPark = data;
+        showParkName(data.name, `${data.city}, ${data.state}`);
+        prefillProfile(data);
+        // If already claimed redirect back
+        if (data.is_claimed) {
+          showToast('This park has already been claimed.', 'warning');
+        }
+      }
+    } catch { showParkName(parkSlug, ''); }
+  });
+}
+
+function showParkName(name, loc) {
+  document.getElementById('claimParkName').textContent  = name;
+  document.getElementById('claimParkName2').textContent = name;
+  document.getElementById('claimParkLoc').textContent   = loc;
+}
+
+function prefillProfile(data) {
+  document.getElementById('profileName').value    = data.name    || '';
+  document.getElementById('profileCity').value    = data.city    || '';
+  document.getElementById('profileState').value   = data.state   || '';
+  document.getElementById('profilePhone').value   = data.phone   || '';
+  document.getElementById('profileWebsite').value = data.website || '';
+  document.getElementById('profileNightly').value = data.price_nightly || '';
+}
+
+// ── Step navigation ───────────────────────────────────────────────────────────
+const STEP_LABELS = ['Confirm','Sign in','Verify','Profile','Payments'];
+
+function goStep(n) {
+  for (let i = 1; i <= 6; i++) {
+    const panel = document.getElementById('step' + i);
+    if (panel) panel.classList.toggle('active', i === n);
+  }
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('dot' + i);
+    const lbl = document.getElementById('lbl' + i);
+    if (!dot) continue;
+    dot.classList.toggle('done',   i < n);
+    dot.classList.toggle('active', i === n);
+    dot.classList.remove('done');
+    if (i < n)  { dot.classList.add('done');   dot.textContent = '✓'; }
+    if (i === n){ dot.classList.add('active');  dot.textContent = i; }
+    if (i > n)  { dot.className = 'step-dot';   dot.textContent = i; }
+    lbl.classList.toggle('active', i === n);
+  }
+  currentStep = n;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function toggleAuthMode() {
+  const isLogin  = document.getElementById('authFormLogin').style.display !== 'none';
+  document.getElementById('authFormLogin').style.display  = isLogin ? 'none' : '';
+  document.getElementById('authFormSignup').style.display = isLogin ? ''     : 'none';
+}
+
+async function claimSignIn() {
+  const sb  = window._sb;
+  const email = document.getElementById('claimEmail').value.trim();
+  const pass  = document.getElementById('claimPassword').value;
+  if (!sb || !email || !pass) { showToast('Please fill in email and password.', 'warning'); return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { showToast(error.message || 'Sign in failed.', 'error'); return; }
+  claimUserId = data.user.id;
+  claimEmail  = data.user.email;
+  goStep(3);
+}
+
+async function claimSignUp() {
+  const sb    = window._sb;
+  const email = document.getElementById('claimSignupEmail').value.trim();
+  const pass  = document.getElementById('claimSignupPassword').value;
+  const first = document.getElementById('claimFirstName').value.trim();
+  const last  = document.getElementById('claimLastName').value.trim();
+  if (!sb || !email || !pass) { showToast('Please fill in all fields.', 'warning'); return; }
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { first_name: first, last_name: last } },
+  });
+  if (error) { showToast(error.message || 'Sign up failed.', 'error'); return; }
+  claimUserId = data.user?.id;
+  claimEmail  = email;
+  goStep(3);
+}
+
+// ── Submit claim to Supabase ──────────────────────────────────────────────────
+async function submitClaim() {
+  const sb = window._sb;
+  if (!sb || !claimPark?.id || !claimUserId) {
+    showToast('Session expired. Please refresh and try again.', 'error');
+    return;
+  }
+  const notes = document.getElementById('claimNotes').value.trim();
+  const { error } = await sb.from('park_claims').upsert({
+    park_id:     claimPark.id,
+    claimant_id: claimUserId,
+    attestation: true,
+    notes:       notes || null,
+    status:      'pending',
+  }, { onConflict: 'park_id,claimant_id' });
+
+  if (error) { showToast(error.message || 'Submission failed.', 'error'); return; }
+
+  // Also mark park as pending_claim in parks table
+  await sb.from('parks').update({ listing_status: 'pending_claim' }).eq('id', claimPark.id);
+
+  goStep(4);
+  showToast('Claim submitted! Proceeding to profile setup.', 'success');
+}
+
+// ── Save profile (Step 4) ─────────────────────────────────────────────────────
+async function saveProfile() {
+  const sb = window._sb;
+  if (!sb || !claimPark?.id) { goStep(5); return; }
+  const updates = {
+    name:          document.getElementById('profileName').value.trim()    || undefined,
+    city:          document.getElementById('profileCity').value.trim()    || undefined,
+    state:         document.getElementById('profileState').value.trim()   || undefined,
+    phone:         document.getElementById('profilePhone').value.trim()   || undefined,
+    website:       document.getElementById('profileWebsite').value.trim() || undefined,
+    description:   document.getElementById('profileDesc').value.trim()    || undefined,
+    price_nightly: parseFloat(document.getElementById('profileNightly').value) || undefined,
+  };
+  Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
+  if (Object.keys(updates).length) {
+    await sb.from('parks').update(updates).eq('id', claimPark.id);
+  }
+  goStep(5);
+}
+
+// ── Stripe Connect (Step 5) ───────────────────────────────────────────────────
+async function startStripeConnect() {
+  if (!claimPark?.id) { skipStripe(); return; }
+  const btn = document.getElementById('connectStripeBtn');
+  btn.disabled = true; btn.textContent = 'Redirecting…';
+  try {
+    const { data: { session } } = await window._sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Not signed in');
+    const res = await fetch('/api/connect-onboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ parkId: claimPark.id }),
+    });
+    const { url, error } = await res.json();
+    if (error) throw new Error(error);
+    window.location.href = url;
+  } catch (err) {
+    showToast(err.message || 'Could not start Stripe setup.', 'error');
+    btn.disabled = false; btn.textContent = 'Connect bank account →';
+  }
+}
+
+function skipStripe() {
+  document.getElementById('claimSubmittedEmail').textContent = claimEmail || 'your email';
+  goStep(6);
+}
+
+// ── Check if user is already signed in ───────────────────────────────────────
+waitForSb(async () => {
+  if (!window._sb) return;
+  const { data: { user } } = await window._sb.auth.getUser();
+  if (user) { claimUserId = user.id; claimEmail = user.email; }
+});
+
+loadPark();
+</script>
+</body>
+</html>

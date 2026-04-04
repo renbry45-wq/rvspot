@@ -404,6 +404,42 @@ ALTER TABLE public.parks
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS platform_fee DECIMAL(10,2) NOT NULL DEFAULT 0;
 
+-- ── Unclaimed park listing system ─────────────────────────────────────────────
+ALTER TABLE public.parks
+  ADD COLUMN IF NOT EXISTS claimed_at      TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS data_source     TEXT DEFAULT 'operator' CHECK (data_source IN ('operator','directory')),
+  ADD COLUMN IF NOT EXISTS listing_status  TEXT NOT NULL DEFAULT 'active' CHECK (listing_status IN ('active','unclaimed','pending_claim'));
+
+-- is_claimed already exists in CREATE TABLE above; ensure default is consistent
+-- UPDATE parks SET listing_status = 'unclaimed' WHERE is_claimed = FALSE AND data_source = 'directory';
+
+-- Park claims (pending approval)
+CREATE TABLE IF NOT EXISTS public.park_claims (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  park_id      UUID NOT NULL REFERENCES public.parks(id) ON DELETE CASCADE,
+  claimant_id  UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  attestation  BOOLEAN NOT NULL DEFAULT FALSE, -- claimant checked "I confirm I am authorized"
+  notes        TEXT,                           -- optional message from claimant
+  reviewed_by  UUID REFERENCES public.profiles(id),
+  reviewed_at  TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (park_id, claimant_id)               -- one pending claim per park per user
+);
+
+CREATE INDEX IF NOT EXISTS idx_park_claims_park    ON public.park_claims (park_id);
+CREATE INDEX IF NOT EXISTS idx_park_claims_status  ON public.park_claims (status);
+CREATE INDEX IF NOT EXISTS idx_park_claims_claimant ON public.park_claims (claimant_id);
+
+ALTER TABLE public.park_claims ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Claimants can view own claims"  ON public.park_claims FOR SELECT USING (auth.uid() = claimant_id);
+CREATE POLICY "Claimants can insert own claims" ON public.park_claims FOR INSERT WITH CHECK (auth.uid() = claimant_id);
+
+CREATE TRIGGER trg_park_claims_updated_at
+BEFORE UPDATE ON public.park_claims
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 -- ────────────────────────────────────────────
 -- Insert 6 sample parks for testing
 INSERT INTO public.parks (name, slug, type, city, state, lat, lng, price_nightly, price_monthly, has_wifi, has_50amp, has_ev_charging, allows_long_stay, pets_allowed, avg_rating, review_count, plan, is_active, is_verified) VALUES

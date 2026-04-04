@@ -219,25 +219,28 @@ async function loadParks() {
   try {
     const { data, error } = await window._sb
       .from('parks')
-      .select('id,name,slug,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,is_verified')
+      .select('id,name,slug,city,state,price_nightly,price_monthly,has_wifi,allows_long_stay,pets_allowed,has_ev_charging,type,avg_rating,review_count,is_verified,is_claimed,listing_status')
       .eq('is_active', true)
       .order('avg_rating', { ascending: false })
       .limit(50);
     if (error || !data?.length) throw error;
     supabaseParks = data.map(p => ({
-      id:       p.id,
-      name:     p.name,
-      state:    p.state,
-      city:     p.city,
-      rating:   p.avg_rating || 0,
-      reviews:  p.review_count || 0,
-      price:    p.price_nightly || 0,
-      monthly:  p.price_monthly || 0,
-      wifi:     p.has_wifi,
-      longstay: p.allows_long_stay,
-      pets:     p.pets_allowed,
-      ev:       p.has_ev_charging,
-      type:     p.type || 'RV Park',
+      id:        p.id,
+      name:      p.name,
+      slug:      p.slug,
+      state:     p.state,
+      city:      p.city,
+      rating:    p.avg_rating || 0,
+      reviews:   p.review_count || 0,
+      price:     p.price_nightly || 0,
+      monthly:   p.price_monthly || 0,
+      wifi:      p.has_wifi,
+      longstay:  p.allows_long_stay,
+      pets:      p.pets_allowed,
+      ev:        p.has_ev_charging,
+      type:      p.type || 'RV Park',
+      isClaimed: p.is_claimed !== false,
+      listingStatus: p.listing_status || 'active',
     }));
     currentParks = [...supabaseParks];
     renderParks(supabaseParks);
@@ -257,9 +260,15 @@ function renderParks(parks) {
     list.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--slate-400)"><div style="font-size:48px;margin-bottom:12px">🔍</div><p>No parks match your filters. Try adjusting your search.</p></div>';
     return;
   }
-  list.innerHTML = parks.map((p, i) => `
-    <a href="park.html?id=${p.id}" class="park-list-card" style="display:grid;text-decoration:none">
-      <div class="park-list-img" style="background:${getParkColor(i)}22">🏕</div>
+  list.innerHTML = parks.map((p, i) => {
+    const isUnclaimed = !p.isClaimed || p.listingStatus === 'unclaimed';
+    const parkHref    = `park.html?id=${p.id}`;
+    return `
+    <a href="${parkHref}" class="park-list-card" style="display:grid;text-decoration:none">
+      <div class="park-list-img" style="background:${getParkColor(i)}22;position:relative">
+        🏕
+        ${isUnclaimed ? '<span style="position:absolute;top:8px;left:8px;background:#6b7280;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.04em">UNCLAIMED</span>' : ''}
+      </div>
       <div class="park-list-body">
         <div class="park-list-state">${p.state} · ${p.city}</div>
         <div class="park-list-name">${p.name}</div>
@@ -273,18 +282,21 @@ function renderParks(parks) {
           ${p.pets?'<span class="tag pets">🐾 Pets</span>':''}
           ${p.ev?'<span class="tag ev">⚡ EV</span>':''}
           <span class="tag">${p.type}</span>
+          ${isUnclaimed ? '<span class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db">Unclaimed listing</span>' : ''}
         </div>
-        ${p.wifi?`<div class="wifi-bar"><span class="wifi-speed">Wi-Fi:</span><div class="wifi-bar-bg"><div class="wifi-bar-fill" style="width:${Math.min(100,p.rating*18)}%"></div></div><span class="wifi-speed">${Math.round(p.rating*18)} Mbps avg</span></div>`:''}
+        ${(!isUnclaimed && p.wifi)?`<div class="wifi-bar"><span class="wifi-speed">Wi-Fi:</span><div class="wifi-bar-bg"><div class="wifi-bar-fill" style="width:${Math.min(100,p.rating*18)}%"></div></div><span class="wifi-speed">${Math.round(p.rating*18)} Mbps avg</span></div>`:''}
       </div>
       <div class="park-list-right">
         <div class="park-list-price">
-          <span class="price-amount">$${p.price}</span>
-          <span class="price-label">/night</span>
-          ${p.longstay?`<div class="monthly">$${p.monthly}/mo</div>`:''}
+          ${p.price > 0 ? `<span class="price-amount">$${p.price}</span><span class="price-label">/night</span>` : '<span class="price-label" style="font-size:13px;color:var(--slate-400)">Contact for rates</span>'}
+          ${(!isUnclaimed && p.longstay)?`<div class="monthly">$${p.monthly}/mo</div>`:''}
         </div>
-        <button class="btn btn-primary btn-sm" style="margin-top:12px">Book now</button>
+        ${isUnclaimed
+          ? `<a href="claim.html?slug=${encodeURIComponent(p.slug||p.id)}" class="btn btn-sm" style="margin-top:12px;background:#713f12;color:#fff;border:none;white-space:nowrap" onclick="event.stopPropagation()">Claim listing</a>`
+          : '<button class="btn btn-primary btn-sm" style="margin-top:12px">Book now</button>'}
       </div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 }
 
 function applyFilters() {

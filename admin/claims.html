@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Park Claims — RVSpot</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/analytics.js"></script>
+  <style>
+    body { background: var(--cream-100); }
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    .claims-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--cream-300); }
+    .claims-table th { background: var(--slate-800); color: #fff; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .claims-table td { padding: 14px 16px; border-bottom: 1px solid var(--cream-300); font-size: 14px; vertical-align: top; }
+    .claims-table tr:last-child td { border-bottom: none; }
+    .claims-table tr:hover td { background: var(--cream-50); }
+    .badge-pending  { background: #fef3c7; color: #92400e; }
+    .badge-approved { background: var(--green-100); color: var(--green-800); }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+    .action-btns { display: flex; gap: 8px; }
+    .btn-approve { background: var(--green-700); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-approve:hover { background: var(--green-800); }
+    .btn-reject  { background: #fff; color: #dc2626; border: 1.5px solid #dc2626; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-reject:hover  { background: #fee2e2; }
+    #accessDenied { display: none; text-align: center; padding: 80px 24px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot <span style="font-size:11px;background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:700">ADMIN</span></a>
+    <ul class="nav-links">
+      <li><a href="claims.html" style="color:var(--green-400)">Claims</a></li>
+    </ul>
+    <div class="nav-actions" id="adminUserInfo" style="font-size:13px;color:rgba(255,255,255,0.6)"></div>
+  </div>
+</nav>
+
+<!-- Access denied state -->
+<div id="accessDenied">
+  <div style="font-size:48px;margin-bottom:16px">🔒</div>
+  <h2 style="margin-bottom:8px">Access denied</h2>
+  <p style="color:var(--slate-500)">This page is only accessible to RVSpot admins.</p>
+  <a href="../index.html" class="btn btn-primary" style="margin-top:16px">Go home</a>
+</div>
+
+<!-- Admin content -->
+<div id="adminContent" style="display:none">
+  <div class="admin-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:1.6rem;margin-bottom:4px">Park Claims</h1>
+        <p style="color:var(--slate-500);font-size:14px">Review and approve or reject park ownership claims.</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div id="claimStats" style="font-size:13px;color:var(--slate-500)"></div>
+        <button class="btn btn-secondary btn-sm" onclick="loadClaims()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="btn btn-sm" id="filterAll"     onclick="filterClaims('all')"     style="background:var(--slate-800);color:#fff">All</button>
+      <button class="btn btn-sm btn-secondary" id="filterPending"  onclick="filterClaims('pending')">Pending</button>
+      <button class="btn btn-sm btn-secondary" id="filterApproved" onclick="filterClaims('approved')">Approved</button>
+      <button class="btn btn-sm btn-secondary" id="filterRejected" onclick="filterClaims('rejected')">Rejected</button>
+    </div>
+
+    <div id="claimsContainer">
+      <div style="text-align:center;padding:60px;color:var(--slate-400)">
+        <div style="font-size:32px;margin-bottom:12px">⏳</div>
+        <p>Loading claims…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+const ADMIN_EMAIL = 'renato@rvspot.net';
+let allClaims = [];
+let currentFilter = 'all';
+
+function waitForSb(cb, attempts = 0) {
+  if (window._sb) return cb();
+  if (attempts > 30) return cb();
+  setTimeout(() => waitForSb(cb, attempts + 1), 100);
+}
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
+waitForSb(async () => {
+  if (!window._sb) { showAccessDenied(); return; }
+  const { data: { user } } = await window._sb.auth.getUser();
+  if (!user || user.email !== ADMIN_EMAIL) {
+    showAccessDenied();
+    return;
+  }
+  document.getElementById('adminUserInfo').textContent = user.email;
+  document.getElementById('adminContent').style.display = '';
+  loadClaims();
+});
+
+function showAccessDenied() {
+  document.getElementById('accessDenied').style.display  = '';
+  document.getElementById('adminContent').style.display  = 'none';
+}
+
+// ── Load claims ───────────────────────────────────────────────────────────────
+async function loadClaims() {
+  document.getElementById('claimsContainer').innerHTML =
+    '<div style="text-align:center;padding:60px;color:var(--slate-400)"><div style="font-size:32px;margin-bottom:12px">⏳</div><p>Loading claims…</p></div>';
+
+  const { data, error } = await window._sb
+    .from('park_claims')
+    .select(`
+      id, status, attestation, notes, created_at, updated_at,
+      parks ( id, name, city, state, slug, phone ),
+      profiles!park_claims_claimant_id_fkey ( id, first_name, last_name )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    document.getElementById('claimsContainer').innerHTML =
+      `<div style="text-align:center;padding:40px;color:#dc2626">Error loading claims: ${error.message}</div>`;
+    return;
+  }
+
+  allClaims = data || [];
+
+  // Stats
+  const pending  = allClaims.filter(c => c.status === 'pending').length;
+  const approved = allClaims.filter(c => c.status === 'approved').length;
+  const rejected = allClaims.filter(c => c.status === 'rejected').length;
+  document.getElementById('claimStats').textContent =
+    `${pending} pending · ${approved} approved · ${rejected} rejected`;
+
+  renderClaims();
+}
+
+function filterClaims(filter) {
+  currentFilter = filter;
+  ['All','Pending','Approved','Rejected'].forEach(f => {
+    const btn = document.getElementById('filter' + f);
+    if (!btn) return;
+    const isActive = f.toLowerCase() === filter;
+    btn.style.background = isActive ? 'var(--slate-800)' : '';
+    btn.style.color      = isActive ? '#fff' : '';
+    btn.className        = isActive ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+  });
+  renderClaims();
+}
+
+function renderClaims() {
+  const claims = currentFilter === 'all'
+    ? allClaims
+    : allClaims.filter(c => c.status === currentFilter);
+
+  if (!claims.length) {
+    document.getElementById('claimsContainer').innerHTML =
+      '<div style="text-align:center;padding:60px;color:var(--slate-400)"><div style="font-size:32px;margin-bottom:12px">📋</div><p>No claims found.</p></div>';
+    return;
+  }
+
+  const rows = claims.map(c => {
+    const park     = c.parks    || {};
+    const claimant = c.profiles || {};
+    const name     = [claimant.first_name, claimant.last_name].filter(Boolean).join(' ') || 'Unknown';
+    const date     = new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const badgeClass = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }[c.status] || '';
+    const actionBtns = c.status === 'pending' ? `
+      <div class="action-btns">
+        <button class="btn-approve" onclick="approveClaim('${c.id}','${park.id}')">✓ Approve</button>
+        <button class="btn-reject"  onclick="rejectClaim('${c.id}')">✗ Reject</button>
+      </div>` : `<span style="font-size:13px;color:var(--slate-400);font-style:italic">${c.status}</span>`;
+
+    return `
+      <tr id="claim-row-${c.id}">
+        <td>
+          <div style="font-weight:700;margin-bottom:2px">${park.name || '—'}</div>
+          <div style="font-size:12px;color:var(--slate-400)">${park.city || ''}${park.state ? ', ' + park.state : ''}</div>
+          ${park.slug ? `<a href="../park.html?id=${park.id}" target="_blank" style="font-size:12px;color:var(--green-700)">View listing ↗</a>` : ''}
+        </td>
+        <td>
+          <div style="font-weight:600">${name}</div>
+          <div style="font-size:12px;color:var(--slate-400)">${date}</div>
+          ${c.notes ? `<div style="font-size:12px;color:var(--slate-600);margin-top:4px;background:var(--cream-100);padding:6px 8px;border-radius:4px;line-height:1.5">"${c.notes}"</div>` : ''}
+        </td>
+        <td>
+          <span class="badge ${badgeClass}" style="text-transform:capitalize">${c.status}</span>
+          ${c.attestation ? '<div style="font-size:11px;color:var(--green-600);margin-top:4px">✓ Attested</div>' : ''}
+        </td>
+        <td>${actionBtns}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('claimsContainer').innerHTML = `
+    <table class="claims-table">
+      <thead>
+        <tr>
+          <th>Park</th>
+          <th>Claimant</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Approve claim ─────────────────────────────────────────────────────────────
+async function approveClaim(claimId, parkId) {
+  if (!confirm('Approve this claim? The park will be marked as claimed and listing_status set to active.')) return;
+  const sb = window._sb;
+  const now = new Date().toISOString();
+
+  // 1. Update claim record
+  const { error: claimErr } = await sb
+    .from('park_claims')
+    .update({ status: 'approved', reviewed_at: now })
+    .eq('id', claimId);
+  if (claimErr) { showToast('Failed to update claim: ' + claimErr.message, 'error'); return; }
+
+  // 2. Update park: is_claimed, claimed_at, listing_status, data_source
+  const { error: parkErr } = await sb
+    .from('parks')
+    .update({
+      is_claimed:     true,
+      claimed_at:     now,
+      listing_status: 'active',
+      data_source:    'operator',
+    })
+    .eq('id', parkId);
+  if (parkErr) { showToast('Claim approved but park update failed: ' + parkErr.message, 'error'); return; }
+
+  showToast('Claim approved! Park is now live and managed by the operator.', 'success');
+  loadClaims();
+}
+
+// ── Reject claim ──────────────────────────────────────────────────────────────
+async function rejectClaim(claimId) {
+  if (!confirm('Reject this claim?')) return;
+  const now = new Date().toISOString();
+  const { error } = await window._sb
+    .from('park_claims')
+    .update({ status: 'rejected', reviewed_at: now })
+    .eq('id', claimId);
+  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+  showToast('Claim rejected.', 'success');
+  loadClaims();
+}
+</script>
+</body>
+</html>
