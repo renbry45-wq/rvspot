@@ -55,6 +55,12 @@ export default {
     if (url.pathname === '/api/stripe-connect-webhook' && request.method === 'POST') {
       return handleConnectWebhook(request, env);
     }
+    if (url.pathname === '/sitemap.xml' && request.method === 'GET') {
+      return handleSitemap(env);
+    }
+    if (url.pathname === '/robots.txt' && request.method === 'GET') {
+      return handleRobots();
+    }
 
     // Serve static assets for everything else
     return env.ASSETS.fetch(request);
@@ -724,6 +730,115 @@ async function verifySignature(payload, sigHeader, secret) {
     diff |= computedHex.charCodeAt(i) ^ sig.charCodeAt(i);
   }
   return diff === 0;
+}
+
+/* ─── Sitemap ───────────────────────────────────────────────── */
+
+const US_STATES = [
+  'alabama','alaska','arizona','arkansas','california','colorado','connecticut',
+  'delaware','florida','georgia','hawaii','idaho','illinois','indiana','iowa',
+  'kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan',
+  'minnesota','mississippi','missouri','montana','nebraska','nevada',
+  'new-hampshire','new-jersey','new-mexico','new-york','north-carolina',
+  'north-dakota','ohio','oklahoma','oregon','pennsylvania','rhode-island',
+  'south-carolina','south-dakota','tennessee','texas','utah','vermont',
+  'virginia','washington','west-virginia','wisconsin','wyoming',
+];
+
+const STATIC_PAGES = [
+  { loc: 'https://rvspot.net/',              priority: '1.0' },
+  { loc: 'https://rvspot.net/search',        priority: '0.9' },
+  { loc: 'https://rvspot.net/pricing',       priority: '0.8' },
+  { loc: 'https://rvspot.net/how-it-works',  priority: '0.7' },
+  { loc: 'https://rvspot.net/blog',          priority: '0.7' },
+  { loc: 'https://rvspot.net/about',         priority: '0.6' },
+  { loc: 'https://rvspot.net/faq',           priority: '0.6' },
+];
+
+function xmlUrl(loc, priority, lastmod) {
+  return [
+    '  <url>',
+    `    <loc>${loc}</loc>`,
+    lastmod ? `    <lastmod>${lastmod.slice(0, 10)}</lastmod>` : '',
+    `    <priority>${priority}</priority>`,
+    '  </url>',
+  ].filter(Boolean).join('\n');
+}
+
+async function handleSitemap(env) {
+  // Fetch active parks and published blog posts in parallel
+  const [parks, posts] = await Promise.all([
+    sbGet(env, '/rest/v1/parks?select=slug,updated_at&stripe_connect_status=eq.active&slug=not.is.null'),
+    sbGet(env, '/rest/v1/blog_posts?select=slug,updated_at&status=eq.published&slug=not.is.null'),
+  ]);
+
+  const urls = [];
+
+  // Static pages
+  for (const p of STATIC_PAGES) {
+    urls.push(xmlUrl(p.loc, p.priority, null));
+  }
+
+  // State pages
+  for (const state of US_STATES) {
+    urls.push(xmlUrl(`https://rvspot.net/rv-parks/${state}`, '0.8', null));
+  }
+
+  // Dynamic park pages
+  if (Array.isArray(parks)) {
+    for (const park of parks) {
+      if (park.slug) {
+        urls.push(xmlUrl(`https://rvspot.net/park/${park.slug}`, '0.6', park.updated_at));
+      }
+    }
+  }
+
+  // Dynamic blog posts
+  if (Array.isArray(posts)) {
+    for (const post of posts) {
+      if (post.slug) {
+        urls.push(xmlUrl(`https://rvspot.net/blog/${post.slug}`, '0.5', post.updated_at));
+      }
+    }
+  }
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls,
+    '</urlset>',
+  ].join('\n');
+
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+}
+
+/* ─── Robots.txt ─────────────────────────────────────────────── */
+
+function handleRobots() {
+  const body = [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /dashboard',
+    'Disallow: /profile',
+    'Disallow: /admin',
+    'Disallow: /api',
+    '',
+    'Sitemap: https://rvspot.net/sitemap.xml',
+  ].join('\n');
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
 }
 
 /* ─── Utility ───────────────────────────────────────────────── */
