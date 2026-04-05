@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — RVSpot</title>
+  <meta name="description" content="Frequently asked questions about booking RV parks, payments, cancellations, and listing your park on RVSpot.">
+  <link rel="canonical" href="https://rvspot.net/faq">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/analytics.js"></script>
+  <style>
+    .faq-hero { background:var(--green-900); padding:72px 0; text-align:center; }
+    .faq-hero h1 { font-size:clamp(2rem,4vw,3rem); color:var(--white); margin-bottom:14px; }
+    .faq-hero p { font-size:17px; color:rgba(255,255,255,0.65); max-width:480px; margin:0 auto; }
+    .faq-layout { max-width:760px; margin:56px auto; padding:0 24px 80px; }
+    .faq-group { margin-bottom:48px; }
+    .faq-group-title { font-family:var(--font-display); font-size:1.3rem; font-weight:700; color:var(--slate-900); margin-bottom:4px; padding-bottom:14px; border-bottom:2px solid var(--green-200); margin-bottom:16px; }
+    .faq-item { border-bottom:1px solid var(--cream-300); }
+    .faq-item:last-child { border-bottom:none; }
+    .faq-q {
+      width:100%; background:none; border:none; text-align:left;
+      padding:18px 0; font-size:15px; font-weight:600; color:var(--slate-900);
+      cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+      gap:16px; line-height:1.4;
+    }
+    .faq-q:hover { color:var(--green-700); }
+    .faq-icon { flex-shrink:0; width:20px; height:20px; border-radius:50%; background:var(--cream-200); display:flex; align-items:center; justify-content:center; font-size:14px; transition:transform 0.2s ease, background 0.2s ease; }
+    .faq-item.open .faq-icon { transform:rotate(45deg); background:var(--green-100); color:var(--green-700); }
+    .faq-a { display:none; padding:0 0 18px; font-size:14px; color:var(--slate-600); line-height:1.8; }
+    .faq-a a { color:var(--green-700); }
+    .faq-item.open .faq-a { display:block; }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="blog/">Blog</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<section class="faq-hero">
+  <div class="container">
+    <h1>Frequently asked questions</h1>
+    <p>Everything you need to know about booking and listing on RVSpot.</p>
+  </div>
+</section>
+
+<div class="faq-layout">
+
+  <!-- FOR GUESTS -->
+  <div class="faq-group">
+    <div class="faq-group-title">For Guests</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How does booking work on RVSpot?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Search for parks by location, dates, or amenities. When you find a park you like, select your arrival and departure dates, enter your rig details, and complete payment through our secure checkout. You'll receive a booking confirmation email immediately. The park operator is notified and will have your reservation ready on arrival.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What is the 3% booking fee?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        RVSpot charges a 3% platform service fee on each booking to cover payment processing infrastructure and platform maintenance. This fee is shown transparently at checkout before you confirm. It is non-refundable except in cases where the park cancels your confirmed reservation.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I know a park is legitimate?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Parks with a "Verified Pro" badge have been onboarded through our Park Pro program, which includes identity and business verification via Stripe Connect. All parks on RVSpot have been reviewed before listing. Community reviews from verified guests provide an additional layer of accountability — you can see honest ratings from real stays.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Can I cancel a booking?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Yes, but the cancellation policy depends on the individual park. Each park sets its own policy (flexible, moderate, or strict), which is displayed on the booking page before you confirm. Common policies offer a full refund if cancelled 24–72 hours in advance. The 3% RVSpot platform fee is non-refundable in all cases. To cancel, go to your booking history in your account dashboard.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What payment methods are accepted?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        We accept all major credit and debit cards (Visa, Mastercard, American Express, Discover) through Stripe's secure checkout. Apple Pay and Google Pay are supported on compatible devices and browsers. We do not accept cash, checks, or bank transfers at this time.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I leave a review?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        After your check-out date, you'll receive an email invitation to review your stay. You can also leave a review by visiting the park's page on RVSpot and clicking "Write a review." Reviews are only accepted from guests who have completed a verified booking at that park to ensure authenticity.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What is Nomad Pro?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Nomad Pro is our $9/month subscription for full-time RV travelers. It unlocks offline maps and GPS routing, real Wi-Fi speed ratings (crowd-sourced from actual guests), park discounts averaging 15% off, access to the caravan organizer, and a remote job board for travelers who work on the road. Cancel anytime from your account dashboard.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I contact a park directly?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Each park's profile page shows their phone number and, for Pro parks, a direct messaging option. For pre-booking questions about specific sites, rig accommodations, or accessibility needs, we recommend calling the park directly. Once you have a confirmed booking, you can also message the park through your booking dashboard.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOR PARK OPERATORS -->
+  <div class="faq-group">
+    <div class="faq-group-title">For Park Operators</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I list my park on RVSpot?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Your park may already be listed — we pre-populate listings from public sources. Search for your park on RVSpot and click "Claim this park" on the listing. We'll verify ownership via phone or business email, usually within 24 hours. Once claimed, you can update all details, add photos, and start accepting bookings. Visit <a href="pages/for-operators.html">our operators page</a> to get started.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How much does it cost?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Listing your park is free. A Basic listing lets guests find you and book — we charge a 3% platform fee per booking. Park Pro is $69/month and removes all commission fees, so you keep 100% of each booking. Pro also includes priority search placement, an analytics dashboard, availability calendar, and verified Pro badge. See the full <a href="pricing">pricing page</a> for a feature comparison.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I get paid?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Payments are processed via Stripe Connect. Once you connect your Stripe account (or create one during onboarding — it's free), payouts are deposited directly into your bank account 2–7 business days after the guest's check-in date. Stripe's standard card processing fees apply (typically 2.9% + $0.30 per transaction).
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What is Stripe Connect?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Stripe Connect is the payment infrastructure we use to route guest payments directly to park operators. When a guest pays for a booking, the funds (minus any applicable fees) flow directly to your connected Stripe account. You don't need a separate Stripe account beforehand — we guide you through creating one during the onboarding process. It's free and takes about 5 minutes.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What is the difference between Basic and Pro?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Both plans let you accept bookings. The key differences: Basic charges a 3% fee per booking; Pro ($69/month) has zero commission. Pro also includes priority placement in search results, a booking analytics dashboard, availability calendar management, direct guest messaging, and a Verified Pro badge that increases guest trust. For most active parks, Pro pays for itself quickly by eliminating per-booking fees.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Can I manage my own availability?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        Yes — Park Pro operators have access to an availability calendar where you can block dates, set minimum stay requirements, and manage capacity. Basic listing operators currently cannot manage availability through the platform; guests contact the park directly to confirm availability before booking. Availability management is one of the key upgrades in the Pro plan.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do guest reviews work?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        After a guest's stay, they receive an automated invitation to leave a review. Reviews are verified — only guests with a completed booking at your park can leave one. You can respond publicly to reviews through your operator dashboard. We do not allow parks to remove reviews except in cases of clear policy violations (spam, offensive content, or reviews not based on a real stay).
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I upgrade to Park Pro?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        From your operator dashboard, click "Upgrade to Pro" and complete the checkout. Your Pro features activate immediately. You'll also be guided through Stripe Connect setup if you haven't completed it yet. Park Pro renews monthly and can be cancelled at any time — your listing reverts to Basic at the end of the billing period with no data lost.
+      </div>
+    </div>
+
+  </div>
+
+  <p style="text-align:center;font-size:14px;color:var(--slate-400);margin-top:8px">
+    Still have questions? Email us at <a href="mailto:renato@rvspot.net" style="color:var(--green-700)">renato@rvspot.net</a>
+  </p>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo"><div class="nav-logo-dot"></div>RVSpot</div>
+        <p class="footer-tagline">The modern platform for RV travelers and park operators.</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="search.html">Find Parks</a></li><li><a href="rv-reviews.html">RV Reviews</a></li><li><a href="routes.html">Route Planner</a></li><li><a href="blog/">Blog</a></li></ul></div>
+      <div class="footer-col"><h4>For Operators</h4><ul><li><a href="pages/for-operators.html">List Your Park</a></li><li><a href="pricing">Pricing</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="about">About</a></li><li><a href="faq" style="color:var(--green-600);font-weight:600">FAQ</a></li><li><a href="terms">Terms of Service</a></li><li><a href="privacy">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div></div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" placeholder="Your password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div><div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div></div><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot!','success');closeModal('signupModal')">Create free account</button></div></div></div>
+
+<script src="js/app.js"></script>
+<script>
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  // Close all open items
+  document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+  // Open clicked item if it wasn't already open
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+</body>
+</html>

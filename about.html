@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — RVSpot</title>
+  <meta name="description" content="RVSpot exists to give park operators the tools they deserve without taking a cut of their revenue. Founded 2025 by Renato Bryant.">
+  <link rel="canonical" href="https://rvspot.net/about">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/analytics.js"></script>
+  <style>
+    .about-hero { background:var(--green-900); padding:80px 0; text-align:center; }
+    .about-hero h1 { font-size:clamp(2rem,4vw,3rem); color:var(--white); margin-bottom:16px; }
+    .about-hero p { font-size:18px; color:rgba(255,255,255,0.65); max-width:600px; margin:0 auto; line-height:1.75; }
+    .about-layout { max-width:760px; margin:64px auto; padding:0 24px 80px; }
+    .about-section { margin-bottom:56px; }
+    .about-section h2 { font-family:var(--font-display); font-size:1.6rem; font-weight:700; color:var(--slate-900); margin-bottom:16px; }
+    .about-section p { font-size:16px; color:var(--slate-600); line-height:1.85; margin-bottom:14px; }
+    .mission-block { background:var(--green-800); border-radius:var(--radius-xl); padding:40px; text-align:center; margin-bottom:56px; }
+    .mission-block blockquote { font-family:var(--font-display); font-size:clamp(1.2rem,2.5vw,1.7rem); font-weight:700; color:var(--white); line-height:1.4; margin:0; quotes:none; }
+    .mission-block cite { display:block; margin-top:16px; font-size:13px; color:rgba(255,255,255,0.5); font-style:normal; }
+    .founder-placeholder { background:var(--cream-100); border:2px dashed var(--cream-400); border-radius:var(--radius-xl); padding:40px; text-align:center; margin-bottom:56px; }
+    .founder-placeholder p { color:var(--slate-400); font-size:14px; font-style:italic; margin:0; }
+    .fact-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:20px; margin-top:32px; }
+    .fact-card { background:var(--cream-50); border:1px solid var(--cream-300); border-radius:var(--radius-lg); padding:24px; text-align:center; }
+    .fact-num { font-family:var(--font-display); font-size:2rem; font-weight:700; color:var(--green-700); display:block; margin-bottom:4px; }
+    .fact-label { font-size:13px; color:var(--slate-500); }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="blog/">Blog</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<section class="about-hero">
+  <div class="container">
+    <h1>Built for the road</h1>
+    <p>RVSpot is a modern booking platform that puts travelers and park operators first — no hidden fees, no unnecessary middlemen.</p>
+  </div>
+</section>
+
+<div class="about-layout">
+
+  <div class="mission-block">
+    <blockquote>"RVSpot exists to give park operators the tools they deserve without taking a cut of their revenue."</blockquote>
+    <cite>— Renato Bryant, Founder</cite>
+  </div>
+
+  <div class="about-section">
+    <h2>Our story</h2>
+    <div class="founder-placeholder">
+      <p>[ Founder story — Renato will fill this in. ]</p>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>What we believe</h2>
+    <p>Most booking platforms take 10–30% of every reservation as a commission. For small, independent park operators — many of them family-run businesses — that's money that should stay in their pocket, not flow to a platform.</p>
+    <p>We built RVSpot on a different model: operators pay a flat monthly fee for Park Pro, and keep 100% of every booking. Travelers get a better experience because parks aren't inflating prices to cover platform fees. Everyone wins.</p>
+    <p>We also believe that travelers deserve honest information — real Wi-Fi speeds, accurate amenity listings, and reviews from people who actually stayed there. Not curated marketing copy.</p>
+  </div>
+
+  <div class="about-section">
+    <h2>By the numbers</h2>
+    <div class="fact-grid">
+      <div class="fact-card"><span class="fact-num">16,400+</span><span class="fact-label">Parks listed</span></div>
+      <div class="fact-card"><span class="fact-num">50</span><span class="fact-label">States covered</span></div>
+      <div class="fact-card"><span class="fact-num">2025</span><span class="fact-label">Year founded</span></div>
+      <div class="fact-card"><span class="fact-num">$0</span><span class="fact-label">Commission on bookings (Pro)</span></div>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>The company</h2>
+    <p>RVSpot is operated by <strong>Booking Bridge LLC dba RVSpot</strong>, founded in 2025 and based in Panama. We are an independent, privately held company.</p>
+    <p>We are a small team building software we believe in. No venture capital, no growth-at-all-costs pressure — just a platform built to last and built fairly.</p>
+  </div>
+
+  <div class="about-section">
+    <h2>Get in touch</h2>
+    <p>We'd love to hear from you — whether you're a traveler with feedback, a park operator with questions, or a journalist covering the RV industry.</p>
+    <p>Email: <a href="mailto:renato@rvspot.net" style="color:var(--green-700)">renato@rvspot.net</a></p>
+  </div>
+
+</div>
+
+<section class="cta-band">
+  <div class="container">
+    <h2>Ready to explore?</h2>
+    <p>Search 16,400+ RV parks across America — free to start.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="search.html" class="btn btn-amber btn-lg">Search Parks →</a>
+      <a href="pages/for-operators.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)">List your park</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo"><div class="nav-logo-dot"></div>RVSpot</div>
+        <p class="footer-tagline">The modern platform for RV travelers and park operators.</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="search.html">Find Parks</a></li><li><a href="rv-reviews.html">RV Reviews</a></li><li><a href="routes.html">Route Planner</a></li><li><a href="blog/">Blog</a></li></ul></div>
+      <div class="footer-col"><h4>For Operators</h4><ul><li><a href="pages/for-operators.html">List Your Park</a></li><li><a href="pricing">Pricing</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="about" style="color:var(--green-600);font-weight:600">About</a></li><li><a href="faq">FAQ</a></li><li><a href="terms">Terms of Service</a></li><li><a href="privacy">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div></div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" placeholder="Your password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div><div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div></div><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot!','success');closeModal('signupModal')">Create free account</button></div></div></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
