@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — RVSpot</title>
+  <meta name="description" content="RVSpot pricing for travelers and park operators. Free to start. Nomad Pro for $9/mo. Park Pro for $79/mo with zero commissions.">
+  <link rel="canonical" href="https://rvspot.net/pricing">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/analytics.js"></script>
+  <style>
+    .pricing-hero { background:var(--green-900); padding:72px 0 80px; text-align:center; }
+    .pricing-hero h1 { font-size:clamp(2rem,4vw,3rem); color:var(--white); margin-bottom:14px; }
+    .pricing-hero p { font-size:17px; color:rgba(255,255,255,0.65); max-width:520px; margin:0 auto; }
+    .pricing-tabs { display:flex; justify-content:center; gap:0; margin:48px auto 40px; width:fit-content; background:var(--cream-100); border:1px solid var(--cream-300); border-radius:var(--radius-lg); padding:4px; }
+    .pricing-tab { padding:9px 28px; border-radius:calc(var(--radius-lg) - 2px); font-size:14px; font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--slate-500); transition:all var(--transition); }
+    .pricing-tab.active { background:var(--white); color:var(--slate-900); box-shadow:var(--shadow-sm); }
+    .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px; max-width:900px; margin:0 auto 64px; }
+    .pricing-card { background:var(--white); border-radius:var(--radius-xl); border:2px solid var(--cream-300); padding:36px 32px; position:relative; }
+    .pricing-card.featured { border-color:var(--green-800); }
+    .pricing-badge { position:absolute; top:-14px; left:50%; transform:translateX(-50%); background:var(--green-800); color:var(--white); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 16px; border-radius:20px; white-space:nowrap; }
+    .pricing-audience { font-size:12px; font-weight:600; color:var(--green-600); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+    .pricing-name { font-family:var(--font-display); font-size:26px; font-weight:700; color:var(--slate-900); }
+    .pricing-price { font-size:42px; font-weight:800; color:var(--slate-900); margin:16px 0 4px; line-height:1; }
+    .pricing-price span { font-size:16px; font-weight:400; color:var(--slate-400); }
+    .pricing-desc { font-size:14px; color:var(--slate-500); margin-bottom:24px; line-height:1.6; }
+    .pricing-features { list-style:none; margin-bottom:28px; }
+    .pricing-features li { display:flex; align-items:flex-start; gap:10px; font-size:14px; padding:8px 0; border-bottom:1px solid var(--cream-300); color:var(--slate-600); }
+    .pricing-features li:last-child { border-bottom:none; }
+    .check { color:var(--green-600); flex-shrink:0; font-weight:700; }
+    .pricing-section-label { text-align:center; margin-bottom:32px; }
+    .pricing-section-label h2 { font-size:1.6rem; margin-bottom:8px; }
+    .pricing-section-label p { color:var(--slate-500); font-size:15px; }
+    .faq-list { max-width:700px; margin:0 auto 80px; }
+    .faq-item { border-bottom:1px solid var(--cream-300); padding:20px 0; }
+    .faq-item:last-child { border-bottom:none; }
+    .faq-q { font-size:15px; font-weight:600; color:var(--slate-900); margin-bottom:8px; }
+    .faq-a { font-size:14px; color:var(--slate-500); line-height:1.75; }
+    .compare-table { width:100%; border-collapse:collapse; max-width:900px; margin:0 auto 64px; font-size:14px; }
+    .compare-table th { padding:12px 16px; background:var(--green-900); color:var(--white); font-weight:600; text-align:left; }
+    .compare-table th:not(:first-child) { text-align:center; }
+    .compare-table td { padding:12px 16px; border-bottom:1px solid var(--cream-300); color:var(--slate-600); }
+    .compare-table td:not(:first-child) { text-align:center; }
+    .compare-table tr:nth-child(even) td { background:var(--cream-50); }
+    .compare-table .section-row td { font-weight:700; color:var(--slate-900); background:var(--cream-100); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+    .yes { color:var(--green-600); font-weight:700; }
+    .no { color:var(--slate-300); }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
+    <ul class="nav-links">
+      <li><a href="search.html">Find Parks</a></li>
+      <li><a href="rv-reviews.html">RV Reviews</a></li>
+      <li><a href="routes.html">Route Planner</a></li>
+      <li><a href="blog/">Blog</a></li>
+      <li><a href="pages/for-operators.html">For Operators</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('loginModal')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('signupModal')">Join free</button>
+    </div>
+  </div>
+</nav>
+
+<section class="pricing-hero">
+  <div class="container">
+    <h1>Simple, transparent pricing</h1>
+    <p>Free to search and browse. Upgrade when you're ready for more.</p>
+  </div>
+</section>
+
+<div class="container">
+
+  <!-- Traveler Plans -->
+  <div class="pricing-section-label" style="margin-top:56px;">
+    <h2>For Travelers</h2>
+    <p>Find, compare, and book RV parks across America.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-audience">For travelers</div>
+      <div class="pricing-name">Explorer</div>
+      <div class="pricing-price">Free</div>
+      <div class="pricing-desc">Everything you need to find your next spot. No credit card required.</div>
+      <ul class="pricing-features">
+        <li><span class="check">✓</span> Search all 16,400+ parks</li>
+        <li><span class="check">✓</span> Read community reviews</li>
+        <li><span class="check">✓</span> Basic filters &amp; map</li>
+        <li><span class="check">✓</span> Direct booking</li>
+        <li><span class="check">✓</span> Booking history</li>
+      </ul>
+      <button class="btn btn-secondary w-full" onclick="openModal('signupModal')">Get started free</button>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Most popular</div>
+      <div class="pricing-audience">For travelers</div>
+      <div class="pricing-name">Nomad Pro</div>
+      <div class="pricing-price">$9 <span>/month</span></div>
+      <div class="pricing-desc">Built for full-timers and serious RV travelers who live life on the road.</div>
+      <ul class="pricing-features">
+        <li><span class="check">✓</span> Everything in Explorer</li>
+        <li><span class="check">✓</span> Offline maps &amp; GPS routing</li>
+        <li><span class="check">✓</span> Real Wi-Fi speed ratings</li>
+        <li><span class="check">✓</span> Park discounts (avg 15% off)</li>
+        <li><span class="check">✓</span> Caravan organizer</li>
+        <li><span class="check">✓</span> Remote job board access</li>
+        <li><span class="check">✓</span> Priority customer support</li>
+      </ul>
+      <button class="btn btn-primary w-full" onclick="startCheckout('nomad_pro')">Get Nomad Pro — $9/mo</button>
+    </div>
+  </div>
+
+  <!-- Operator Plans -->
+  <div class="pricing-section-label">
+    <h2>For Park Operators</h2>
+    <p>List your park, attract more guests, and manage bookings — all in one place.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-audience">For operators</div>
+      <div class="pricing-name">Basic Listing</div>
+      <div class="pricing-price">Free</div>
+      <div class="pricing-desc">Get your park in front of thousands of RV travelers at no cost.</div>
+      <ul class="pricing-features">
+        <li><span class="check">✓</span> Park profile page</li>
+        <li><span class="check">✓</span> Appear in search results</li>
+        <li><span class="check">✓</span> Receive guest reviews</li>
+        <li><span class="check">✓</span> Basic amenity listing</li>
+        <li><span class="check">✓</span> 3% booking fee applies</li>
+      </ul>
+      <a href="pages/for-operators.html" class="btn btn-secondary w-full">Claim your park</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Best for growth</div>
+      <div class="pricing-audience">For operators</div>
+      <div class="pricing-name">Park Pro</div>
+      <div class="pricing-price">$79 <span>/month</span></div>
+      <div class="pricing-desc">Full-featured operator tools to maximize bookings and revenue.</div>
+      <ul class="pricing-features">
+        <li><span class="check">✓</span> Everything in Basic Listing</li>
+        <li><span class="check">✓</span> Zero commission on bookings</li>
+        <li><span class="check">✓</span> Priority placement in search</li>
+        <li><span class="check">✓</span> Analytics dashboard</li>
+        <li><span class="check">✓</span> Availability calendar</li>
+        <li><span class="check">✓</span> Verified Pro badge</li>
+        <li><span class="check">✓</span> Direct guest messaging</li>
+        <li><span class="check">✓</span> Stripe Connect payouts</li>
+      </ul>
+      <button class="btn btn-primary w-full" onclick="startCheckout('park_pro')">Get Park Pro — $79/mo</button>
+    </div>
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="pricing-section-label">
+    <h2>Compare plans</h2>
+    <p>Everything side by side.</p>
+  </div>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th style="width:40%">Feature</th>
+        <th>Explorer</th>
+        <th>Nomad Pro</th>
+        <th>Basic Listing</th>
+        <th>Park Pro</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="section-row"><td colspan="5">Search &amp; Discovery</td></tr>
+      <tr><td>Search all parks</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Advanced filters</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Real Wi-Fi speed ratings</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr><td>Offline maps &amp; routing</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+      <tr class="section-row"><td colspan="5">Bookings</td></tr>
+      <tr><td>Direct booking</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Park discounts (avg 15%)</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td></tr>
+      <tr><td>Zero commission</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr class="section-row"><td colspan="5">Operator Tools</td></tr>
+      <tr><td>Park profile page</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Availability calendar</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr><td>Analytics dashboard</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr><td>Priority search placement</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr><td>Verified Pro badge</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+    </tbody>
+  </table>
+
+  <!-- FAQ -->
+  <div class="pricing-section-label">
+    <h2>Frequently asked questions</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">Can I cancel my subscription anytime?</div>
+      <div class="faq-a">Yes. You can cancel Nomad Pro or Park Pro at any time from your account dashboard. Your plan remains active until the end of the current billing period. No cancellation fees.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is the 3% booking fee?</div>
+      <div class="faq-a">RVSpot charges a 3% platform service fee on bookings processed through the platform. Park Pro subscribers pay zero commission — the $79/month subscription covers all booking fees.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do operator payouts work?</div>
+      <div class="faq-a">Park Pro operators connect a Stripe account and receive payouts 2–7 business days after guest check-in. Stripe's standard processing fees apply (typically 2.9% + $0.30 per transaction).</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is there a free trial for Park Pro?</div>
+      <div class="faq-a">We don't currently offer a free trial, but your first month is risk-free — if you're not satisfied, contact us within 30 days for a full refund.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I claim my park listing?</div>
+      <div class="faq-a">Visit your park's page on RVSpot and click "Claim this park." We'll verify ownership via phone or business email and have your listing active within 24 hours.</div>
+    </div>
+  </div>
+
+</div>
+
+<section class="cta-band">
+  <div class="container">
+    <h2>Ready to get started?</h2>
+    <p>Join thousands of travelers and operators already using RVSpot.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-amber btn-lg" onclick="openModal('signupModal')">Create free account</button>
+      <a href="pages/for-operators.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)">List your park</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo"><div class="nav-logo-dot"></div>RVSpot</div>
+        <p class="footer-tagline">The modern platform for RV travelers and park operators.</p>
+      </div>
+      <div class="footer-col"><h4>For Travelers</h4><ul><li><a href="search.html">Find Parks</a></li><li><a href="rv-reviews.html">RV Reviews</a></li><li><a href="routes.html">Route Planner</a></li><li><a href="blog/">Blog</a></li></ul></div>
+      <div class="footer-col"><h4>For Operators</h4><ul><li><a href="pages/for-operators.html">List Your Park</a></li><li><a href="pricing" style="color:var(--green-400);font-weight:600">Pricing</a></li></ul></div>
+      <div class="footer-col"><h4>Company</h4><ul><li><a href="pages/about.html">About</a></li><li><a href="terms">Terms of Service</a></li><li><a href="pages/privacy.html">Privacy Policy</a></li></ul></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-legal">© 2026 Booking Bridge LLC dba RVSpot · All rights reserved</div></div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" placeholder="Your password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">First name</label><input type="text" placeholder="Jane"></div><div class="form-group"><label class="form-label">Last name</label><input type="text" placeholder="Smith"></div></div><div class="form-group"><label class="form-label">Email</label><input type="email" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" placeholder="Min. 8 characters"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot!','success');closeModal('signupModal')">Create free account</button></div></div></div>
+
+<script src="js/app.js"></script>
+<script src="js/stripe.js"></script>
+</body>
+</html>
