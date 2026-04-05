@@ -4,46 +4,104 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RV Route Planner — RVSpot</title>
-  <meta name="description" content="Plan your RV trip with parks, dump stations, EV chargers, and fuel stops mapped along your route. Free for all users, enhanced for Nomad Pro members.">
+  <meta name="description" content="Plan your RV trip with parks, dump stations, EV chargers, and fuel stops mapped along your route.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕</text></svg>">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/analytics.js"></script>
   <style>
-    .planner-layout { display:grid; grid-template-columns:380px 1fr; gap:0; height:calc(100vh - 68px); }
-    .planner-sidebar { background:var(--white); border-right:1px solid var(--cream-300); overflow-y:auto; display:flex; flex-direction:column; }
-    .planner-sidebar-header { padding:20px; border-bottom:1px solid var(--cream-300); background:var(--green-900); color:var(--white); }
-    .planner-sidebar-header h2 { font-size:20px; margin-bottom:4px; }
-    .planner-sidebar-header p { font-size:13px; color:rgba(255,255,255,0.6); }
-    .route-builder { padding:20px; border-bottom:1px solid var(--cream-300); }
-    .route-stop { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .stop-indicator { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
-    .stop-start { background:var(--green-800); color:var(--white); }
-    .stop-middle { background:var(--amber-500); color:var(--white); }
-    .stop-end { background:var(--slate-700); color:var(--white); }
-    .stop-line { width:2px; height:20px; background:var(--cream-300); margin-left:13px; }
-    .route-stop input { flex:1; padding:9px 12px; border:1.5px solid var(--cream-300); border-radius:var(--radius-md); font-size:13px; }
-    .route-stop input:focus { border-color:var(--green-600); outline:none; }
-    .filter-chips { display:flex; flex-wrap:wrap; gap:6px; padding:16px 20px; border-bottom:1px solid var(--cream-300); }
-    .chip { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--cream-300); background:var(--white); color:var(--slate-600); transition:all .2s; }
-    .chip.active { background:var(--green-800); color:var(--white); border-color:var(--green-800); }
-    .stops-list { flex:1; overflow-y:auto; }
-    .stop-card { padding:16px 20px; border-bottom:1px solid var(--cream-200); display:flex; gap:12px; align-items:flex-start; cursor:pointer; transition:background .15s; }
-    .stop-card:hover { background:var(--green-50); }
-    .stop-icon { width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-    .stop-card-name { font-weight:600; font-size:14px; color:var(--slate-900); margin-bottom:2px; }
-    .stop-card-sub { font-size:12px; color:var(--slate-400); }
-    .stop-card-distance { font-size:12px; font-weight:600; color:var(--green-700); margin-top:4px; }
-    .map-area { background:var(--green-50); position:relative; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; border:none; }
-    .map-message { text-align:center; max-width:400px; color:var(--slate-500); }
-    .map-message h3 { font-size:18px; margin-bottom:10px; color:var(--slate-900); }
-    .map-message p { font-size:14px; line-height:1.7; }
-    .route-summary { padding:16px 20px; background:var(--green-50); border-top:1px solid var(--green-100); }
-    .route-stat { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
-    .route-stat strong { color:var(--slate-900); }
-    @media(max-width:900px){ .planner-layout{grid-template-columns:1fr;height:auto;} .map-area{height:300px;} }
+    html, body { height: 100%; overflow: hidden; }
+    .planner-layout { display: grid; grid-template-columns: 380px 1fr; height: calc(100vh - 68px); }
+
+    /* ── Sidebar ── */
+    .planner-sidebar { background: var(--white); border-right: 1px solid var(--cream-300); overflow-y: auto; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 18px 20px; background: var(--green-900); color: var(--white); flex-shrink: 0; }
+    .sidebar-header h2 { font-size: 18px; margin-bottom: 2px; }
+    .sidebar-header p { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+    /* ── Route builder ── */
+    .route-builder { padding: 16px 20px; border-bottom: 1px solid var(--cream-300); flex-shrink: 0; }
+    .stop-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; position: relative; }
+    .stop-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 8px; }
+    .dot-start { background: var(--green-700); color: #fff; }
+    .dot-mid   { background: var(--amber-500); color: #fff; }
+    .dot-end   { background: var(--slate-700); color: #fff; }
+    .stop-connector { width: 2px; height: 14px; background: var(--cream-300); margin-left: 13px; }
+    .stop-input-wrap { flex: 1; position: relative; }
+    .stop-input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--cream-300); border-radius: var(--radius-md); font-size: 13px; background: var(--white); }
+    .stop-input:focus { outline: none; border-color: var(--green-600); }
+    .stop-remove { background: none; border: none; color: var(--slate-300); font-size: 16px; cursor: pointer; padding: 6px; margin-top: 4px; flex-shrink: 0; }
+    .stop-remove:hover { color: #dc2626; }
+    .autocomplete-drop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1.5px solid var(--cream-300); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 100; max-height: 200px; overflow-y: auto; }
+    .ac-item { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--cream-200); }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: var(--green-50); color: var(--green-800); }
+    .ac-place { font-weight: 600; color: var(--slate-900); }
+    .ac-region { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+    .add-stop-btn { background: none; border: none; color: var(--green-700); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0 4px 38px; display: flex; align-items: center; gap: 5px; }
+    .add-stop-btn:hover { color: var(--green-800); }
+    .plan-btn { margin-top: 14px; width: 100%; }
+
+    /* ── Filters ── */
+    .filters-section { padding: 12px 20px; border-bottom: 1px solid var(--cream-300); flex-shrink: 0; }
+    .filters-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--slate-400); margin-bottom: 8px; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--cream-300); background: var(--white); color: var(--slate-500); transition: all .15s; user-select: none; }
+    .chip.active { background: var(--green-800); color: #fff; border-color: var(--green-800); }
+
+    /* ── Preferences ── */
+    .prefs-section { padding: 12px 20px; border-bottom: 1px solid var(--cream-300); flex-shrink: 0; }
+    .prefs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .prefs-grid select { padding: 7px 10px; font-size: 12px; }
+
+    /* ── Results ── */
+    .results-list { flex: 1; overflow-y: auto; }
+    .results-empty { padding: 40px 20px; text-align: center; color: var(--slate-400); font-size: 14px; }
+    .results-empty .icon { font-size: 40px; margin-bottom: 12px; }
+    .route-summary { padding: 12px 20px; background: var(--green-50); border-bottom: 1px solid var(--green-100); font-size: 13px; }
+    .route-summary-title { font-weight: 700; color: var(--green-800); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .route-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .route-stat { color: var(--slate-600); }
+    .route-stat strong { color: var(--slate-900); }
+    .results-section-label { padding: 10px 20px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--slate-400); }
+    .park-result-card { padding: 14px 20px; border-bottom: 1px solid var(--cream-200); display: flex; gap: 12px; align-items: flex-start; cursor: pointer; transition: background .12s; }
+    .park-result-card:hover { background: var(--green-50); }
+    .park-result-card.highlighted { background: var(--green-50); border-left: 3px solid var(--green-600); }
+    .prc-icon { width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--green-100); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .prc-body { flex: 1; min-width: 0; }
+    .prc-name { font-weight: 700; font-size: 13px; color: var(--slate-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prc-loc  { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+    .prc-tags { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+    .prc-tag  { font-size: 10px; background: var(--cream-200); color: var(--slate-600); padding: 2px 7px; border-radius: 10px; }
+    .prc-right { text-align: right; flex-shrink: 0; }
+    .prc-price { font-size: 13px; font-weight: 700; color: var(--slate-900); }
+    .prc-rating { font-size: 11px; color: var(--amber-700); }
+    .prc-book { margin-top: 5px; font-size: 11px; padding: 4px 10px; }
+    .upclaimed-badge { font-size: 10px; background: var(--amber-100); color: var(--amber-700); padding: 2px 7px; border-radius: 10px; }
+    .pro-upsell { padding: 14px 20px; background: var(--amber-100); border-top: 1px solid var(--amber-300); font-size: 12px; }
+    .pro-upsell strong { font-size: 13px; color: var(--amber-800); display: block; margin-bottom: 3px; }
+
+    /* ── Map ── */
+    #map { width: 100%; height: 100%; }
+    .mapboxgl-popup-content { border-radius: var(--radius-lg) !important; padding: 14px 16px !important; box-shadow: var(--shadow-lg) !important; min-width: 200px; font-family: var(--font-body); }
+    .popup-name { font-weight: 700; font-size: 14px; color: var(--slate-900); margin-bottom: 4px; }
+    .popup-loc  { font-size: 12px; color: var(--slate-400); margin-bottom: 8px; }
+    .popup-price { font-size: 13px; font-weight: 700; color: var(--green-700); }
+    .popup-rating { font-size: 12px; color: var(--amber-700); }
+    .popup-btn { display: block; margin-top: 10px; text-align: center; background: var(--green-700); color: #fff; border-radius: var(--radius-md); padding: 7px 14px; font-size: 12px; font-weight: 700; text-decoration: none; }
+    .popup-btn:hover { background: var(--green-800); }
+    .map-loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(255,255,255,.9); border-radius: var(--radius-xl); padding: 24px 32px; text-align: center; font-size: 14px; color: var(--slate-600); z-index: 10; box-shadow: var(--shadow-lg); }
+
+    @media(max-width: 900px) {
+      html, body { overflow: auto; }
+      .planner-layout { grid-template-columns: 1fr; height: auto; }
+      #map { height: 50vh; }
+    }
   </style>
 </head>
 <body>
+
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>RVSpot</a>
@@ -51,6 +109,7 @@
       <li><a href="search.html">Find Parks</a></li>
       <li><a href="rv-reviews.html">RV Reviews</a></li>
       <li><a href="routes.html" class="active">Route Planner</a></li>
+      <li><a href="blog/">Blog</a></li>
       <li><a href="pages/for-operators.html">For Operators</a></li>
     </ul>
     <div class="nav-actions">
@@ -61,148 +120,539 @@
 </nav>
 
 <div class="planner-layout">
+
+  <!-- ── Sidebar ── -->
   <div class="planner-sidebar">
-    <div class="planner-sidebar-header">
+    <div class="sidebar-header">
       <h2>🗺 Route Planner</h2>
-      <p>Plan your route with parks, EV stops, fuel, and dump stations</p>
+      <p>Find RV parks along any route across the US</p>
     </div>
 
+    <!-- Route inputs -->
     <div class="route-builder">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:12px">Your route</div>
-      <div class="route-stop">
-        <div class="stop-indicator stop-start">A</div>
-        <input type="text" id="startPoint" placeholder="Starting point (city or zip)…" value="Austin, TX">
+      <div class="filters-label" style="margin-bottom:10px">Your route</div>
+      <div id="stopsContainer">
+        <div class="stop-row" data-stop="0">
+          <div class="stop-dot dot-start">A</div>
+          <div class="stop-input-wrap">
+            <input class="stop-input" type="text" placeholder="Starting point…" autocomplete="off">
+            <div class="autocomplete-drop" style="display:none"></div>
+          </div>
+        </div>
+        <div class="stop-connector"></div>
+        <div class="stop-row" data-stop="1">
+          <div class="stop-dot dot-end">B</div>
+          <div class="stop-input-wrap">
+            <input class="stop-input" type="text" placeholder="Destination…" autocomplete="off">
+            <div class="autocomplete-drop" style="display:none"></div>
+          </div>
+        </div>
       </div>
-      <div class="stop-line"></div>
-      <div class="route-stop" id="waypointContainer">
-        <div class="stop-indicator stop-middle">B</div>
-        <input type="text" placeholder="Add a stop…" value="Asheville, NC">
-      </div>
-      <div class="stop-line"></div>
-      <button style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--green-700);background:none;border:none;cursor:pointer;padding:4px 0;margin-left:36px;margin-bottom:8px" onclick="addWaypoint()">+ Add another stop</button>
-      <div class="route-stop">
-        <div class="stop-indicator stop-end">C</div>
-        <input type="text" placeholder="Destination…" value="Fort Myers, FL">
-      </div>
-      <button class="btn btn-primary w-full" style="margin-top:16px" onclick="planRoute()">Plan this route</button>
+      <button class="add-stop-btn" onclick="addStop()">+ Add a stop</button>
+      <button class="btn btn-primary plan-btn" id="planBtn" onclick="planRoute()">Plan Route</button>
     </div>
 
-    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-300)">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:8px">Show along route</div>
+    <!-- Filter chips -->
+    <div class="filters-section">
+      <div class="filters-label">Show along route</div>
       <div class="filter-chips">
-        <div class="chip active" onclick="this.classList.toggle('active')">🏕 RV Parks</div>
-        <div class="chip active" onclick="this.classList.toggle('active')">⛽ Fuel stops</div>
-        <div class="chip active" onclick="this.classList.toggle('active')">🗑 Dump stations</div>
-        <div class="chip" onclick="this.classList.toggle('active')">⚡ EV charging</div>
-        <div class="chip" onclick="this.classList.toggle('active')">🔧 RV repair</div>
-        <div class="chip" onclick="this.classList.toggle('active')">🏥 Hospitals</div>
+        <div class="chip active" data-filter="parks">🏕 RV Parks</div>
+        <div class="chip active" data-filter="wifi">📶 Wi-Fi</div>
+        <div class="chip active" data-filter="hookup">🔌 Full hookup</div>
+        <div class="chip" data-filter="ev">⚡ EV charging</div>
+        <div class="chip" data-filter="pets">🐾 Pet friendly</div>
+        <div class="chip" data-filter="pool">🏊 Pool</div>
       </div>
     </div>
 
-    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-300)">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-500);margin-bottom:8px">Rig preferences</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div><label class="form-label" style="font-size:11px">Rig length</label><select style="padding:7px 10px;font-size:13px"><option>Up to 35 ft</option><option>36–45 ft</option><option>45+ ft</option></select></div>
-        <div><label class="form-label" style="font-size:11px">Max nightly</label><select style="padding:7px 10px;font-size:13px"><option>Any price</option><option>Up to $40</option><option>Up to $60</option><option>Up to $80</option></select></div>
+    <!-- Rig preferences -->
+    <div class="prefs-section">
+      <div class="filters-label">Rig preferences</div>
+      <div class="prefs-grid">
+        <div>
+          <label class="form-label" style="font-size:11px;margin-bottom:4px">Rig length</label>
+          <select id="rigLength">
+            <option value="0">Any length</option>
+            <option value="35">Up to 35 ft</option>
+            <option value="45">Up to 45 ft</option>
+            <option value="99">45+ ft</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px;margin-bottom:4px">Max nightly</label>
+          <select id="maxPrice">
+            <option value="0">Any price</option>
+            <option value="40">Up to $40</option>
+            <option value="60">Up to $60</option>
+            <option value="80">Up to $80</option>
+            <option value="100">Up to $100</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <!-- Route results -->
-    <div class="stops-list" id="stopsList">
-      <div style="padding:14px 20px;background:var(--green-50);border-bottom:1px solid var(--green-100)">
-        <div style="font-size:13px;font-weight:700;color:var(--green-800)">Planned route: Austin → Asheville → Fort Myers</div>
-        <div class="route-stat mt-8"><span>Total distance</span><strong>1,840 miles</strong></div>
-        <div class="route-stat"><span>Estimated drive time</span><strong>28 hours</strong></div>
-        <div class="route-stat"><span>RV parks found</span><strong>18 along route</strong></div>
-        <div class="route-stat"><span>EV stops</span><strong>4 available</strong></div>
-      </div>
-      <div style="padding:12px 20px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-400)">Recommended stops</div>
-
-      <div class="stop-card" onclick="window.open('../park.html?id=1','_self')">
-        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
-        <div>
-          <div class="stop-card-name">Pineview Lake RV Resort</div>
-          <div class="stop-card-sub">Austin, TX · Start point · ★★★★★ 4.8</div>
-          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag wifi" style="font-size:11px">📶 94 Mbps</span><span class="tag longstay" style="font-size:11px">🏠 Long stay</span></div>
-        </div>
-        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$45/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
-      </div>
-
-      <div class="stop-card">
-        <div class="stop-icon" style="background:#fff3e0">⛽</div>
-        <div>
-          <div class="stop-card-name">Love's Travel Stop — Natchez, MS</div>
-          <div class="stop-card-sub">MP 310 · Full hookup overnight · Dump station</div>
-          <div class="stop-card-distance">↓ 420 miles from Austin</div>
-        </div>
-        <div style="margin-left:auto;text-align:right"><div style="font-size:13px;color:var(--slate-500)">$25/night</div></div>
-      </div>
-
-      <div class="stop-card" onclick="window.open('../park.html?id=2','_self')">
-        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
-        <div>
-          <div class="stop-card-name">Blue Ridge Mountain Camp</div>
-          <div class="stop-card-sub">Asheville, NC · ★★★★☆ 4.6 · Waypoint B</div>
-          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag wifi" style="font-size:11px">📶 Wi-Fi</span><span class="tag ev" style="font-size:11px">⚡ EV</span></div>
-        </div>
-        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$38/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
-      </div>
-
-      <div class="stop-card">
-        <div class="stop-icon" style="background:#e8f4fd">⚡</div>
-        <div>
-          <div class="stop-card-name">Tesla Supercharger — Savannah, GA</div>
-          <div class="stop-card-sub">16 stalls · 250kW · 24 hours</div>
-          <div class="stop-card-distance">↓ 320 miles from Asheville</div>
-        </div>
-        <div style="margin-left:auto;text-align:right"><div style="font-size:13px;color:var(--slate-500)">$0.32/kWh</div></div>
-      </div>
-
-      <div class="stop-card" onclick="window.open('../park.html?id=3','_self')">
-        <div class="stop-icon" style="background:var(--green-100)">🏕</div>
-        <div>
-          <div class="stop-card-name">Sunbelt RV Community</div>
-          <div class="stop-card-sub">Fort Myers, FL · ★★★★★ 4.7 · Destination</div>
-          <div style="display:flex;gap:6px;margin-top:6px"><span class="tag ev" style="font-size:11px">⚡ EV</span><span class="tag longstay" style="font-size:11px">🏠 Long stay</span></div>
-        </div>
-        <div style="margin-left:auto;text-align:right"><div style="font-size:14px;font-weight:700;color:var(--slate-900)">$55/night</div><button class="btn btn-primary btn-sm" style="margin-top:6px">Book</button></div>
-      </div>
-
-      <div style="padding:16px 20px;background:var(--amber-100);border-top:1px solid var(--amber-300)">
-        <div style="font-size:13px;font-weight:600;color:var(--amber-800);margin-bottom:4px">🔒 Nomad Pro: Offline route access</div>
-        <div style="font-size:12px;color:var(--amber-700)">Save this route for offline GPS navigation, get park discounts, and see real-time road conditions. <a href="pages/nomad-pro.html" style="font-weight:600;text-decoration:underline">Upgrade for $9/mo →</a></div>
+    <!-- Results -->
+    <div class="results-list" id="resultsList">
+      <div class="results-empty">
+        <div class="icon">🗺</div>
+        <p>Enter a start and destination above, then tap <strong>Plan Route</strong> to find RV parks along your way.</p>
       </div>
     </div>
   </div>
 
-  <!-- Map -->
-  <div class="map-area">
-    <div style="font-size:80px">🗺</div>
-    <div class="map-message">
-      <h3>Interactive route map</h3>
-      <p>Once the Mapbox API key is configured, this area displays an interactive route map with park pins, real-time traffic, EV charger locations, dump stations, and fuel stops along your route.</p>
-      <a href="docs/setup-guide.md" class="btn btn-primary" style="margin-top:16px">Setup Mapbox →</a>
+  <!-- ── Map ── -->
+  <div style="position:relative">
+    <div id="map"></div>
+    <div id="mapLoading" class="map-loading" style="display:none">
+      <div style="font-size:28px;margin-bottom:8px">⏳</div>
+      Calculating route…
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full">Sign in</button></div></div></div>
-<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" onclick="showToast('Welcome! 🏕','success');closeModal('signupModal')">Create account</button></div></div></div>
+<!-- Modals -->
+<div class="modal-overlay" id="loginModal"><div class="modal"><div class="modal-header"><div class="modal-title">Sign in to RVSpot</div><button class="modal-close" data-modal-close="loginModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="signInWithEmail(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">Sign in</button></div></div></div>
+<div class="modal-overlay" id="signupModal"><div class="modal"><div class="modal-header"><div class="modal-title">Join RVSpot free</div><button class="modal-close" data-modal-close="signupModal">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">Email</label><input type="email"></div><div class="form-group"><label class="form-label">Password</label><input type="password"></div><button class="btn btn-primary w-full" style="margin-top:8px" onclick="showToast('Welcome to RVSpot! 🏕','success');closeModal('signupModal')">Create free account</button></div></div></div>
 
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="js/app.js"></script>
 <script>
-let waypointCount = 1;
-function addWaypoint() {
-  waypointCount++;
-  const container = document.getElementById('waypointContainer');
-  const newStop = document.createElement('div');
-  newStop.className = 'route-stop';
-  newStop.innerHTML = `<div class="stop-indicator stop-middle">${String.fromCharCode(65+waypointCount)}</div><input type="text" placeholder="Add a stop…">`;
-  container.parentNode.insertBefore(newStop, container.nextSibling);
-  showToast('Stop added to route','success');
+/* ──────────────────────────────────────────────────────────────
+   RVSpot Route Planner
+   Mapbox GL JS v3 + Mapbox Directions API + Supabase parks
+   ────────────────────────────────────────────────────────────── */
+
+const MAPBOX_TOKEN = 'pk.YOUR_MAPBOX_TOKEN_HERE'; // ← replace with your token
+const SB_URL  = 'https://uydiifdgjzylfxxaoznv.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGlpZmRnanp5bGZ4eGFvem52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTMxNDMsImV4cCI6MjA5MDY2OTE0M30.McVsij-Z3m-rh9wjedwl5hM5fAaB5YDGYfHjsgxDfdE';
+
+mapboxgl.accessToken = MAPBOX_TOKEN;
+
+// ── State ────────────────────────────────────────────────────────
+const stops = [];          // [{input, dot, coords: [lng,lat]}]
+let map, routeParks = [];
+let activePopup = null;
+let gcTimers = {};
+
+// ── Init Supabase ────────────────────────────────────────────────
+let sb;
+(function waitSb(n) {
+  if (window.supabase) { sb = window.supabase.createClient(SB_URL, SB_KEY); return; }
+  if (n < 30) setTimeout(() => waitSb(n+1), 100);
+})(0);
+
+// ── Init map ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/outdoors-v12',
+    center: [-98.5, 39.5],
+    zoom: 3.5,
+  });
+
+  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  map.addControl(new mapboxgl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: false,
+    showUserHeading: false,
+  }), 'top-right');
+
+  map.on('load', () => {
+    // Route line layer
+    map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'route-line', type: 'line', source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#1a5c3a', 'line-width': 4, 'line-opacity': 0.85 }
+    });
+    map.addLayer({ id: 'route-outline', type: 'line', source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.4 },
+    }, 'route-line');
+  });
+
+  // Init stop inputs
+  document.querySelectorAll('.stop-row').forEach(row => registerStop(row));
+  updateDots();
+
+  // Filter chips
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      c.classList.toggle('active');
+      if (routeParks.length) renderResults(routeParks);
+    });
+  });
+});
+
+// ── Stop management ──────────────────────────────────────────────
+function registerStop(row) {
+  const input = row.querySelector('.stop-input');
+  const drop  = row.querySelector('.autocomplete-drop');
+  const idx   = parseInt(row.dataset.stop);
+
+  // Ensure stops array slot
+  while (stops.length <= idx) stops.push({ coords: null });
+  stops[idx] = { input, drop, coords: null };
+
+  input.addEventListener('input', () => geocodeInput(idx));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') drop.style.display = 'none'; });
+  document.addEventListener('click', e => {
+    if (!row.contains(e.target)) drop.style.display = 'none';
+  });
 }
-function planRoute() {
-  showToast('Route calculated! 1,840 miles · 18 parks found','success');
+
+function addStop() {
+  const container = document.getElementById('stopsContainer');
+  const idx = stops.length;
+
+  // Insert before last stop
+  const rows = container.querySelectorAll('.stop-row');
+  const lastRow = rows[rows.length - 1];
+
+  const connector = document.createElement('div');
+  connector.className = 'stop-connector';
+
+  const row = document.createElement('div');
+  row.className = 'stop-row';
+  row.dataset.stop = idx;
+  row.innerHTML = `
+    <div class="stop-dot dot-mid">${String.fromCharCode(65 + idx)}</div>
+    <div class="stop-input-wrap">
+      <input class="stop-input" type="text" placeholder="Add a stop…" autocomplete="off">
+      <div class="autocomplete-drop" style="display:none"></div>
+    </div>
+    <button class="stop-remove" onclick="removeStop(this)" title="Remove stop">✕</button>`;
+
+  container.insertBefore(connector, lastRow);
+  container.insertBefore(row, lastRow);
+
+  stops.push({ input: null, drop: null, coords: null });
+  registerStop(row);
+  updateDots();
+  row.querySelector('.stop-input').focus();
+}
+
+function removeStop(btn) {
+  const row = btn.closest('.stop-row');
+  const idx = parseInt(row.dataset.stop);
+  stops.splice(idx, 1);
+  // Remove connector before row
+  const prev = row.previousElementSibling;
+  if (prev && prev.classList.contains('stop-connector')) prev.remove();
+  row.remove();
+  // Re-index remaining rows
+  document.querySelectorAll('.stop-row').forEach((r, i) => {
+    r.dataset.stop = i;
+    if (stops[i]) stops[i].input = r.querySelector('.stop-input');
+  });
+  updateDots();
+}
+
+function updateDots() {
+  const rows = document.querySelectorAll('.stop-row');
+  const total = rows.length;
+  rows.forEach((row, i) => {
+    const dot = row.querySelector('.stop-dot');
+    dot.className = `stop-dot ${i === 0 ? 'dot-start' : i === total-1 ? 'dot-end' : 'dot-mid'}`;
+    dot.textContent = String.fromCharCode(65 + i);
+  });
+}
+
+// ── Geocoding autocomplete ───────────────────────────────────────
+function geocodeInput(idx) {
+  clearTimeout(gcTimers[idx]);
+  const stop = stops[idx];
+  if (!stop) return;
+  const q = stop.input.value.trim();
+  if (q.length < 2) { stop.drop.style.display = 'none'; return; }
+
+  gcTimers[idx] = setTimeout(async () => {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json`
+      + `?country=US&types=place,address,region,poi&limit=5&access_token=${MAPBOX_TOKEN}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      showSuggestions(idx, data.features || []);
+    } catch (e) {}
+  }, 280);
+}
+
+function showSuggestions(idx, features) {
+  const stop = stops[idx];
+  if (!stop) return;
+  if (!features.length) { stop.drop.style.display = 'none'; return; }
+
+  stop.drop.innerHTML = features.map((f, i) =>
+    `<div class="ac-item" data-idx="${i}">
+      <div class="ac-place">${esc(f.text || f.place_name)}</div>
+      <div class="ac-region">${esc(f.place_name)}</div>
+    </div>`
+  ).join('');
+
+  stop.drop.querySelectorAll('.ac-item').forEach((item, i) => {
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const f = features[i];
+      stop.input.value = f.place_name;
+      stop.coords = f.center; // [lng, lat]
+      stop.drop.style.display = 'none';
+    });
+  });
+
+  stop.drop.style.display = 'block';
+}
+
+// ── Plan route ───────────────────────────────────────────────────
+async function planRoute() {
+  // Validate all stops have coords
+  const filledStops = stops.filter(s => s && s.coords);
+  if (filledStops.length < 2) {
+    // Try geocoding any filled-in inputs that weren't selected from dropdown
+    const tasks = stops.map(async (s, i) => {
+      if (!s || s.coords || !s.input?.value.trim()) return;
+      const q = s.input.value.trim();
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json`
+        + `?country=US&types=place,address,region&limit=1&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.features?.[0]) {
+        s.coords = data.features[0].center;
+        s.input.value = data.features[0].place_name;
+      }
+    });
+    await Promise.all(tasks);
+  }
+
+  const coordStops = stops.filter(s => s?.coords);
+  if (coordStops.length < 2) {
+    showToast('Enter at least a start and destination', 'error'); return;
+  }
+
+  document.getElementById('mapLoading').style.display = 'block';
+  document.getElementById('planBtn').disabled = true;
+  document.getElementById('planBtn').textContent = 'Calculating…';
+
+  try {
+    const coordStr = coordStops.map(s => s.coords.join(',')).join(';');
+    const dirUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}`
+      + `?geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_TOKEN}`;
+
+    const dirRes  = await fetch(dirUrl);
+    const dirData = await dirRes.json();
+
+    if (!dirData.routes?.[0]) {
+      showToast('Could not calculate route — check addresses', 'error');
+      return;
+    }
+
+    const route = dirData.routes[0];
+    const geom  = route.geometry;
+
+    // Draw route on map
+    map.getSource('route').setData({ type: 'Feature', geometry: geom });
+
+    // Fit map to route
+    const coords = geom.coordinates;
+    const bounds = coords.reduce(
+      (b, c) => b.extend(c),
+      new mapboxgl.LngLatBounds(coords[0], coords[0])
+    );
+    map.fitBounds(bounds, { padding: { top: 60, bottom: 60, left: 60, right: 60 } });
+
+    // Build bounding box (expanded ~1° for parks near route)
+    const lngs = coords.map(c => c[0]);
+    const lats  = coords.map(c => c[1]);
+    const bbox = {
+      minLng: Math.min(...lngs) - 0.5,
+      maxLng: Math.max(...lngs) + 0.5,
+      minLat: Math.min(...lats) - 0.5,
+      maxLat: Math.max(...lats) + 0.5,
+    };
+
+    // Route stats
+    const distMi   = Math.round(route.distance * 0.000621371);
+    const hrs       = Math.floor(route.duration / 3600);
+    const mins      = Math.round((route.duration % 3600) / 60);
+    const durationStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+    // Fetch parks in bounding box from Supabase
+    const parks = await fetchParksInBbox(bbox);
+    routeParks  = parks;
+
+    // Draw park markers
+    drawParkMarkers(parks);
+
+    // Render sidebar results
+    renderResults(parks, {
+      distance: distMi,
+      duration: durationStr,
+      stops: coordStops,
+    });
+
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    document.getElementById('mapLoading').style.display = 'none';
+    document.getElementById('planBtn').disabled = false;
+    document.getElementById('planBtn').textContent = 'Plan Route';
+  }
+}
+
+// ── Fetch parks ──────────────────────────────────────────────────
+async function fetchParksInBbox(bbox) {
+  if (!sb) return [];
+  const maxPrice = parseInt(document.getElementById('maxPrice').value) || 0;
+  const rigLen   = parseInt(document.getElementById('rigLength').value) || 0;
+
+  let query = sb
+    .from('parks')
+    .select('id,name,city,state,slug,lat,lng,price_nightly,avg_rating,review_count,has_wifi,has_full_hookup,has_ev_charging,has_pool,pets_allowed,is_claimed,listing_status,max_rig_length_ft')
+    .eq('is_active', true)
+    .gte('lat', bbox.minLat).lte('lat', bbox.maxLat)
+    .gte('lng', bbox.minLng).lte('lng', bbox.maxLng)
+    .order('avg_rating', { ascending: false })
+    .limit(80);
+
+  if (maxPrice > 0) query = query.lte('price_nightly', maxPrice);
+  if (rigLen > 0)   query = query.or(`max_rig_length_ft.is.null,max_rig_length_ft.gte.${rigLen}`);
+
+  // Active filter chips
+  const chips = [...document.querySelectorAll('.chip.active')].map(c => c.dataset.filter);
+  if (chips.includes('wifi'))   query = query.eq('has_wifi', true);
+  if (chips.includes('hookup')) query = query.eq('has_full_hookup', true);
+  if (chips.includes('ev'))     query = query.eq('has_ev_charging', true);
+  if (chips.includes('pets'))   query = query.eq('pets_allowed', true);
+  if (chips.includes('pool'))   query = query.eq('has_pool', true);
+
+  const { data, error } = await query;
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+// ── Draw markers ─────────────────────────────────────────────────
+function drawParkMarkers(parks) {
+  // Remove existing markers
+  document.querySelectorAll('.park-marker').forEach(el => el.remove());
+
+  parks.forEach(park => {
+    if (!park.lat || !park.lng) return;
+
+    const el = document.createElement('div');
+    el.className = 'park-marker';
+    el.style.cssText = `
+      width:28px;height:28px;border-radius:50%;
+      background:${park.is_claimed ? '#1a5c3a' : '#92400e'};
+      border:2.5px solid #fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,.35);
+      transition:transform .15s;
+    `;
+    el.textContent = '🏕';
+    el.addEventListener('mouseenter', () => el.style.transform = 'scale(1.25)');
+    el.addEventListener('mouseleave', () => el.style.transform = 'scale(1)');
+
+    const popup = new mapboxgl.Popup({ offset: 18, closeButton: true, maxWidth: '240px' })
+      .setHTML(`
+        <div class="popup-name">${esc(park.name)}</div>
+        <div class="popup-loc">${esc(park.city)}, ${esc(park.state)}</div>
+        ${park.avg_rating ? `<div class="popup-rating">★ ${parseFloat(park.avg_rating).toFixed(1)} (${park.review_count} reviews)</div>` : ''}
+        ${park.price_nightly ? `<div class="popup-price">$${park.price_nightly}/night</div>` : '<div class="popup-price" style="color:#92400e">Contact for rates</div>'}
+        <a href="park.html?id=${park.id}" class="popup-btn">${park.is_claimed ? 'View & Book' : 'View listing'}</a>
+      `);
+
+    el.addEventListener('click', () => {
+      if (activePopup) activePopup.remove();
+      activePopup = popup;
+      // Highlight sidebar card
+      document.querySelectorAll('.park-result-card').forEach(c => c.classList.remove('highlighted'));
+      const card = document.querySelector(`[data-park-id="${park.id}"]`);
+      if (card) { card.classList.add('highlighted'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    });
+
+    new mapboxgl.Marker({ element: el })
+      .setLngLat([park.lng, park.lat])
+      .setPopup(popup)
+      .addTo(map);
+  });
+}
+
+// ── Render sidebar results ────────────────────────────────────────
+function renderResults(parks, meta) {
+  const list = document.getElementById('resultsList');
+
+  if (!parks.length) {
+    list.innerHTML = `<div class="results-empty"><div class="icon">🔍</div><p>No parks found along this route with the current filters. Try relaxing your filters.</p></div>`;
+    return;
+  }
+
+  const summaryHtml = meta ? `
+    <div class="route-summary">
+      <div class="route-summary-title">
+        ${meta.stops.map(s => s.input?.value?.split(',')[0] || '?').join(' → ')}
+      </div>
+      <div class="route-stats">
+        <div class="route-stat"><strong>${meta.distance} mi</strong> drive</div>
+        <div class="route-stat"><strong>${meta.duration}</strong> est.</div>
+        <div class="route-stat"><strong>${parks.length}</strong> parks found</div>
+      </div>
+    </div>` : '';
+
+  const chips = [...document.querySelectorAll('.chip.active')].map(c => c.dataset.filter);
+  const shown = parks.filter(p => {
+    if (chips.includes('wifi')   && !p.has_wifi)        return false;
+    if (chips.includes('hookup') && !p.has_full_hookup) return false;
+    if (chips.includes('ev')     && !p.has_ev_charging) return false;
+    if (chips.includes('pets')   && !p.pets_allowed)    return false;
+    if (chips.includes('pool')   && !p.has_pool)        return false;
+    return true;
+  });
+
+  const cards = shown.map(p => {
+    const tags = [];
+    if (p.has_wifi)        tags.push('📶 Wi-Fi');
+    if (p.has_full_hookup) tags.push('🔌 Full hookup');
+    if (p.has_ev_charging) tags.push('⚡ EV');
+    if (p.has_pool)        tags.push('🏊 Pool');
+    if (p.pets_allowed)    tags.push('🐾 Pets');
+
+    return `
+      <div class="park-result-card" data-park-id="${p.id}" onclick="flyTopark('${p.id}',${p.lng},${p.lat})">
+        <div class="prc-icon">🏕</div>
+        <div class="prc-body">
+          <div class="prc-name">${esc(p.name)}</div>
+          <div class="prc-loc">${esc(p.city)}, ${esc(p.state)}${p.avg_rating ? ` · ★ ${parseFloat(p.avg_rating).toFixed(1)}` : ''}</div>
+          ${tags.length ? `<div class="prc-tags">${tags.map(t=>`<span class="prc-tag">${t}</span>`).join('')}</div>` : ''}
+          ${!p.is_claimed ? '<div style="margin-top:4px"><span class="upclaimed-badge">Unclaimed listing</span></div>' : ''}
+        </div>
+        <div class="prc-right">
+          ${p.price_nightly ? `<div class="prc-price">$${p.price_nightly}<span style="font-size:10px;font-weight:400;color:var(--slate-400)">/night</span></div>` : '<div class="prc-price" style="font-size:11px;color:var(--slate-400)">Contact</div>'}
+          <a href="park.html?id=${p.id}" class="btn btn-primary prc-book" onclick="event.stopPropagation()">${p.is_claimed ? 'Book' : 'View'}</a>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.innerHTML = summaryHtml
+    + `<div class="results-section-label">RV Parks along route (${shown.length})</div>`
+    + cards
+    + `<div class="pro-upsell">
+        <strong>🔒 Nomad Pro: Save routes offline</strong>
+        Access saved routes without cell service, get park discounts, and real-time road alerts.
+        <a href="pages/for-operators.html" style="color:var(--amber-700);font-weight:700"> Upgrade for $9/mo →</a>
+      </div>`;
+}
+
+// ── Fly to park on map ────────────────────────────────────────────
+function flyTopark(id, lng, lat) {
+  if (!lng || !lat) return;
+  map.flyTo({ center: [lng, lat], zoom: 12, speed: 1.4 });
+  document.querySelectorAll('.park-result-card').forEach(c =>
+    c.classList.toggle('highlighted', c.dataset.parkId === id)
+  );
+}
+
+// ── Utility ───────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
